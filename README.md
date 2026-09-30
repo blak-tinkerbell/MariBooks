@@ -8,6 +8,11 @@ currency, and turn your record into a lender-ready statement and a shareable cre
 Built as a **serverless web app on AWS** for the [Zero to Shipped](https://builder.aws.com/build/hackathons/e83e84e5-4f4c-383b-bbe9-4a15ac195d55/zero-to-shipped)
 hackathon. Category: `#commercial-potential` · Lane: `#startups`.
 
+**Live:** https://d3vn6ch6zctfj4.cloudfront.net · **Try the demo, no sign-up:** https://d3vn6ch6zctfj4.cloudfront.net/?demo
+· **Submission write-up:** [`submission/SUBMISSION.md`](submission/SUBMISSION.md)
+
+![MariBooks dashboard](submission/screenshots/01-dashboard.png)
+
 ## What makes it different
 - **Honest multi-currency.** Amounts are stored in the currency they happened in and
   translated on demand — never silently mixed.
@@ -19,6 +24,10 @@ hackathon. Category: `#commercial-potential` · Lane: `#startups`.
   asset base for funding applications.
 - **Credit passport.** Turnover, cash-flow stability, continuous records and declared assets —
   shared only with explicit, revocable consent.
+- **Paste a payment SMS.** EcoCash / InnBucks / bank confirmations fill the form (rules parser
+  in the browser; optional Amazon Bedrock refinement on the API).
+- **Works on bad connections.** Failed saves queue on the device and sync later; the app shell
+  loads offline.
 
 ## Repository layout
 ```
@@ -43,7 +52,7 @@ The build is spec-driven. See:
 npm install            # installs all workspaces
 npm run build:shared   # build the domain package
 npm test               # run unit tests
-npm run dev:web        # start the SPA locally
+npm run dev:web        # start the SPA locally — open /?demo to use the demo business
 ```
 
 ## Deploy (AWS serverless, region af-south-1)

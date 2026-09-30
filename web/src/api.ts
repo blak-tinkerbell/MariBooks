@@ -6,6 +6,7 @@ import type {
   BusinessProfile,
   OfficialRate,
   ShareLink,
+  SmsDraft,
   Transaction,
 } from "@maribooks/shared";
 import { getIdToken } from "./auth.js";
@@ -90,4 +91,5 @@ export const api = {
     note?: string;
   }) => request<ShareLink>("PUT", `/shares/${link.id}`, link),
   revokeShare: (id: string) => request<ShareLink>("DELETE", `/shares/${id}`),
+  parseSms: (text: string) => request<SmsDraft>("POST", "/parse", { text }),
 };

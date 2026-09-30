@@ -1,0 +1,10 @@
+{
+  "name": "MariBooks",
+  "short_name": "MariBooks",
+  "description": "Multi-currency bookkeeping and a credit passport for small businesses.",
+  "start_url": "/#/dashboard",
+  "display": "standalone",
+  "background_color": "#F2F5F3",
+  "theme_color": "#0C3A35",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}

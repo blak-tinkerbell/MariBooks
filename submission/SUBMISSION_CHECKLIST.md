@@ -18,6 +18,9 @@ posted on your Builder Center project before then. Verify each item against the 
 
 > If the app is not live and reachable, the project does not advance to judging — no exceptions.
 
+- [ ] Redesign + `/parse` route deployed (steps in `infra/DEPLOYED.md` → "Deploying the redesign").
+- [ ] `https://d3vn6ch6zctfj4.cloudfront.net/?demo` opens the demo dashboard in a private window.
+
 ## 1. Category & lane tags (both required)
 - [ ] App category tag added: **`#commercial-potential`**
 - [ ] Lane tag added: **`#startups`** (or `#community` if you decide to reposition)
@@ -61,6 +64,10 @@ posted on your Builder Center project before then. Verify each item against the 
 - [ ] The `SUBMISSION.md` AWS list matches what is really running — no aspirational services.
 
 ## 7. Judging-axis polish (Round 1 AI scoring)
+- [ ] Every `‹PERSONALISE›` / `‹ADD›` in `SUBMISSION.md` filled with real facts (owner story,
+      sourced market figures, early-user results) — or the line removed. No invented numbers.
+- [ ] 2–3 minute demo video recorded and linked (problem → live demo → architecture → next).
+- [ ] Screenshots from `submission/screenshots/` and `submission/architecture.png` attached to the post.
 - [ ] **Creativity & storytelling** — clear narrative and hook.
 - [ ] **Technical innovation** — multi-currency/rail ledger + dated FX explained.
 - [ ] **Community & market impact** — who benefits and how many.

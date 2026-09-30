@@ -21,6 +21,21 @@ Parameters:
       SSM Parameter Store so runtime config lives outside code. Update this if the CloudFront
       domain changes.
 
+  BedrockModelId:
+    Type: String
+    Default: ""
+    Description: >
+      Optional Amazon Bedrock model or inference-profile id used to refine pasted payment SMS
+      that the rule-based parser could not fully read. Empty disables the AI step (the rules
+      parser still works).
+  BedrockRegion:
+    Type: String
+    Default: ""
+    Description: Region to call Bedrock in (empty = the stack region).
+
+Conditions:
+  HasBedrock: !Not [!Equals [!Ref BedrockModelId, ""]]
+
 Globals:
   Function:
     Runtime: nodejs22.x
@@ -144,6 +159,8 @@ Resources:
         Variables:
           TABLE_NAME: !Ref Table
           CONFIG_PARAM_NAME: !Ref ConfigParameter
+          BEDROCK_MODEL_ID: !Ref BedrockModelId
+          BEDROCK_REGION: !Ref BedrockRegion
           NODE_OPTIONS: "--enable-source-maps"
       Policies:
         - Version: "2012-10-17"
@@ -167,6 +184,16 @@ Resources:
               Action:
                 - ssm:GetParameter
               Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AppName}/${Stage}/cors-origin"
+            - !If
+              - HasBedrock
+              - Sid: BedrockParseSms
+                Effect: Allow
+                Action:
+                  - bedrock:InvokeModel
+                Resource:
+                  - "arn:aws:bedrock:*::foundation-model/*"
+                  - !Sub "arn:aws:bedrock:*:${AWS::AccountId}:inference-profile/*"
+              - !Ref AWS::NoValue
       Events:
         ListTx:
           Type: HttpApi
@@ -186,6 +213,12 @@ Resources:
             ApiId: !Ref HttpApi
             Path: /transactions/{id}
             Method: DELETE
+        ParseSms:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /parse
+            Method: POST
         GetRates:
           Type: HttpApi
           Properties:
@@ -244,7 +277,7 @@ Resources:
               audience:
                 - !Ref UserPoolClient
       CorsConfiguration:
-        AllowMethods: [GET, PUT, DELETE, OPTIONS]
+        AllowMethods: [GET, PUT, POST, DELETE, OPTIONS]
         AllowHeaders: [authorization, content-type]
         # Locked to the exact CloudFront origin (no wildcard). Sourced from the CorsOrigin
         # parameter, which is also published to SSM Parameter Store (see ConfigParameter).

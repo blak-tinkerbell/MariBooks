@@ -7,7 +7,7 @@
  */
 
 import { OfficialRateTable, translate, type TranslationResult } from "./fx.js";
-import { add, subtract, sum } from "./money.js";
+import { add, subtract, sum, toScaled } from "./money.js";
 import type {
   AssetClass,
   Category,
@@ -74,6 +74,13 @@ export function getDashboard(
     if (t.direction === "IN") {
       ins.push(tr.value);
       cashByRail[t.rail] = add(cashByRail[t.rail] ?? "0", tr.value);
+      // A fee or IMTT deducted from money received is an operating cost, never silently dropped.
+      const charges = add(t.fee ?? "0", t.imtt ?? "0");
+      if (toScaled(charges) > 0n) {
+        const c = toReporting({ ...t, amount: charges }, currency, basis, rates).value;
+        opOut.push(c);
+        cashByRail[t.rail] = subtract(cashByRail[t.rail] ?? "0", c);
+      }
     } else {
       // For OUT, translate the full outflow (principal + fee + imtt) for cash-by-rail,
       // but profit uses principal only (fees are expenses too, kept simple here: principal+fees

@@ -69,3 +69,28 @@ CLOUDFRONT-scope WebACL (must live in us-east-1). Deploy/associate procedure in 
 | Alarms | Lambda `Errors` + API `5xx` → SNS |
 
 Deploy/params (Lambda name, HTTP API id, optional alarm email) documented in `infra/AUDIT_DEPLOY.md`.
+
+## Deploying the redesign + SMS parsing (Oct 2026)
+
+The web redesign is a static rebuild. The API gains `POST /parse` (payment-SMS parsing), so the
+core stack needs one `sam deploy` too.
+
+```bash
+# 1. API: new /parse route. Leave BedrockModelId empty to use the rules parser only.
+npm run build
+cd infra && sam build && sam deploy --profile MariBooks --region af-south-1
+#   To enable the optional Bedrock step (after enabling model access in the Bedrock console):
+#   sam deploy ... --parameter-overrides BedrockModelId=<model or inference-profile id> BedrockRegion=<region>
+cd ..
+
+# 2. Web: build with the stack outputs, sync and invalidate.
+VITE_API_ENDPOINT=https://h6khi16q5m.execute-api.af-south-1.amazonaws.com/prod \
+VITE_USER_POOL_ID=af-south-1_EsVd6dQTv \
+VITE_USER_POOL_CLIENT_ID=3b8gsvgbvteake88t6dnke70ci \
+npm run build --workspace web
+aws s3 sync web/dist s3://maribooks-prod-spa-985923204885 --delete --profile MariBooks --region af-south-1
+aws cloudfront create-invalidation --distribution-id E1QN9VIES8PZAU --paths "/*" --profile MariBooks
+```
+
+Then check in a private window: `/` shows sign-in with "Try the demo", `/?demo` opens the demo
+dashboard, and `/sw.js` + `/manifest.webmanifest` return 200.

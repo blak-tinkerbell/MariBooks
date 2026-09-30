@@ -371,3 +371,14 @@ describe("end-to-end scenario (Definition of Done)", () => {
     expect(() => editTransaction(txns[2]!, { amount: "60.00" }, { lockedIds: after })).not.toThrow();
   });
 });
+
+describe("fees on money in", () => {
+  it("counts a fee deducted from a receipt as an operating cost", () => {
+    const t = buildTransaction({ id: "fin1", direction: "IN", amount: "100.00", currency: "USD", rail: "ECOCASH", category: "SALES", date: "2026-09-30", fee: "1.50" });
+    const d = getDashboard([t], { from: "2026-09-01", to: "2026-09-30" }, "USD");
+    expect(d.moneyIn).toBe("100.00");
+    expect(d.operatingOut).toBe("1.50");
+    expect(d.profit).toBe("98.50");
+    expect(d.cashByRail.ECOCASH).toBe("98.50");
+  });
+});
