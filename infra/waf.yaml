@@ -1,0 +1,74 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  MariBooks WAF — AWS WAFv2 WebACL scoped for CloudFront. This stack MUST be
+  deployed to us-east-1 (CLOUDFRONT-scope WebACLs are only valid there), even
+  though the rest of the MariBooks stack lives in af-south-1. It exposes the
+  WebACL ARN as an output, which is then passed into the maribooks-hosting
+  stack (af-south-1) as the WebAclArn parameter to associate it with the
+  CloudFront distribution.
+
+Parameters:
+  AppName:
+    Type: String
+    Default: maribooks
+  Stage:
+    Type: String
+    Default: prod
+
+Resources:
+  WebAcl:
+    Type: AWS::WAFv2::WebACL
+    Properties:
+      Name: !Sub "${AppName}-${Stage}-cf-webacl"
+      Scope: CLOUDFRONT
+      DefaultAction:
+        Allow: {}
+      VisibilityConfig:
+        SampledRequestsEnabled: true
+        CloudWatchMetricsEnabled: true
+        MetricName: !Sub "${AppName}-${Stage}-webacl"
+      Rules:
+        - Name: AWSManagedRulesCommonRuleSet
+          Priority: 0
+          OverrideAction:
+            None: {}
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesCommonRuleSet
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Sub "${AppName}-${Stage}-common-rules"
+        - Name: AWSManagedRulesKnownBadInputsRuleSet
+          Priority: 1
+          OverrideAction:
+            None: {}
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesKnownBadInputsRuleSet
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Sub "${AppName}-${Stage}-known-bad-inputs"
+        - Name: RateLimit
+          Priority: 2
+          Action:
+            Block: {}
+          Statement:
+            RateBasedStatement:
+              Limit: 2000
+              AggregateKeyType: IP
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Sub "${AppName}-${Stage}-rate-limit"
+
+Outputs:
+  WebAclArn:
+    Description: ARN of the CloudFront-scoped WebACL. Pass this into the maribooks-hosting stack as WebAclArn.
+    Value: !GetAtt WebAcl.Arn
+  WebAclId:
+    Description: Id of the WebACL.
+    Value: !GetAtt WebAcl.Id

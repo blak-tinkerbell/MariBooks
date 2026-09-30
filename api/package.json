@@ -1,0 +1,23 @@
+{
+  "name": "@maribooks/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/handler.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json --noEmit && node build.mjs",
+    "bundle": "node build.mjs",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.600.0",
+    "@aws-sdk/lib-dynamodb": "^3.600.0",
+    "@maribooks/shared": "file:../shared",
+    "esbuild": "^0.23.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.140",
+    "typescript": "^5.4.0",
+    "vitest": "^3.2.7"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "maribooks",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MariBooks — dead-simple, multi-currency bookkeeping and credit passport for African SMMEs.",
+  "workspaces": [
+    "shared",
+    "web",
+    "api"
+  ],
+  "scripts": {
+    "build:shared": "npm run build --workspace shared",
+    "build:web": "npm run build --workspace web",
+    "build:api": "npm run build --workspace api",
+    "build": "npm run build:shared && npm run build:api && npm run build:web",
+    "test": "npm run test --workspaces --if-present",
+    "test:shared": "npm run test --workspace shared",
+    "dev:web": "npm run dev --workspace web"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,279 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  MariBooks — secure serverless web app (API Gateway HTTP API + Lambda + DynamoDB) with a
+  Cognito-authenticated API and KMS encryption. Hosting (S3 + CloudFront + WAF) is described
+  in the design; this template provisions the data/API/auth core first so the app can ship.
+
+Parameters:
+  AppName:
+    Type: String
+    Default: maribooks
+  Stage:
+    Type: String
+    Default: prod
+    AllowedValues: [dev, prod]
+  CorsOrigin:
+    Type: String
+    Default: "https://d3vn6ch6zctfj4.cloudfront.net"
+    Description: >
+      The exact CloudFront origin allowed to call the API (no wildcard). This is also written to
+      SSM Parameter Store so runtime config lives outside code. Update this if the CloudFront
+      domain changes.
+
+Globals:
+  Function:
+    Runtime: nodejs22.x
+    Timeout: 10
+    MemorySize: 256
+    Tracing: Active
+    Architectures: [arm64]
+
+Resources:
+  # ---------- KMS (M6): customer-managed key for data at rest ----------
+  DataKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: !Sub "${AppName}-${Stage} data key"
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: EnableRoot
+            Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action: "kms:*"
+            Resource: "*"
+  DataKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: !Sub "alias/${AppName}-${Stage}-data"
+      TargetKeyId: !Ref DataKey
+
+  # ---------- SSM Parameter Store (M6): runtime config, no secrets in code ----------
+  # Non-secret runtime config (the allowed CORS origin) lives in SSM rather than being baked
+  # into the function. A SecureString would be used the same way for any actual secret; there
+  # are currently no secrets to store (auth is delegated to Cognito; the SPA client has none).
+  ConfigParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: !Sub "/${AppName}/${Stage}/cors-origin"
+      Type: String
+      Value: !Ref CorsOrigin
+      Description: Allowed CloudFront origin for the API (runtime config, not a secret).
+
+  # ---------- DynamoDB (M4): single-table, SSE-KMS, PITR, deletion protection ----------
+  Table:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: !Sub "${AppName}-${Stage}"
+      BillingMode: PAY_PER_REQUEST
+      DeletionProtectionEnabled: true
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+      SSESpecification:
+        SSEEnabled: true
+        SSEType: KMS
+        KMSMasterKeyId: !Ref DataKey
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+
+  # ---------- Cognito (M5): owner accounts + JWT ----------
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub "${AppName}-${Stage}-users"
+      AutoVerifiedAttributes: [email]
+      UsernameAttributes: [email]
+      MfaConfiguration: "OPTIONAL"
+      EnabledMfas: [SOFTWARE_TOKEN_MFA]
+      AccountRecoverySetting:
+        RecoveryMechanisms:
+          - Name: verified_email
+            Priority: 1
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 10
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: true
+      UserAttributeUpdateSettings:
+        AttributesRequireVerificationBeforeUpdate: [email]
+
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref UserPool
+      ClientName: !Sub "${AppName}-${Stage}-spa"
+      GenerateSecret: false # public SPA client; SRP auth (no client secret in the browser)
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+      AccessTokenValidity: 60
+      IdTokenValidity: 60
+      RefreshTokenValidity: 30
+      TokenValidityUnits:
+        AccessToken: minutes
+        IdToken: minutes
+        RefreshToken: days
+      PreventUserExistenceErrors: ENABLED
+
+  # ---------- Lambda (M3): sync API, least-privilege ----------
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      # Pre-bundled by `npm run bundle --workspace api` (esbuild) into api/dist.
+      CodeUri: ../api/dist/
+      Handler: handler.handler
+      # dist/handler.mjs is ESM; Lambda infers ESM from the .mjs extension.
+      ReservedConcurrentExecutions: 20
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref Table
+          CONFIG_PARAM_NAME: !Ref ConfigParameter
+          NODE_OPTIONS: "--enable-source-maps"
+      Policies:
+        - Version: "2012-10-17"
+          Statement:
+            - Sid: TableAccess
+              Effect: Allow
+              Action:
+                - dynamodb:GetItem
+                - dynamodb:PutItem
+                - dynamodb:DeleteItem
+                - dynamodb:Query
+              Resource: !GetAtt Table.Arn
+            - Sid: KeyUse
+              Effect: Allow
+              Action:
+                - kms:Decrypt
+                - kms:GenerateDataKey
+              Resource: !GetAtt DataKey.Arn
+            - Sid: ConfigRead
+              Effect: Allow
+              Action:
+                - ssm:GetParameter
+              Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AppName}/${Stage}/cors-origin"
+      Events:
+        ListTx:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /transactions
+            Method: GET
+        PutTx:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /transactions/{id}
+            Method: PUT
+        DelTx:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /transactions/{id}
+            Method: DELETE
+        GetRates:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /rates
+            Method: GET
+        PutRate:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /rates/{date}
+            Method: PUT
+        GetProfile:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /profile
+            Method: GET
+        PutProfile:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /profile
+            Method: PUT
+        ListShares:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /shares
+            Method: GET
+        PutShare:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /shares/{id}
+            Method: PUT
+        DeleteShare:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /shares/{id}
+            Method: DELETE
+
+  # ---------- API Gateway HTTP API (M2): JWT authorizer, CORS, throttling, access logs ----------
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: !Ref Stage
+      Auth:
+        DefaultAuthorizer: CognitoJwt
+        Authorizers:
+          CognitoJwt:
+            IdentitySource: "$request.header.Authorization"
+            JwtConfiguration:
+              issuer: !Sub "https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}"
+              audience:
+                - !Ref UserPoolClient
+      CorsConfiguration:
+        AllowMethods: [GET, PUT, DELETE, OPTIONS]
+        AllowHeaders: [authorization, content-type]
+        # Locked to the exact CloudFront origin (no wildcard). Sourced from the CorsOrigin
+        # parameter, which is also published to SSM Parameter Store (see ConfigParameter).
+        AllowOrigins:
+          - !Ref CorsOrigin
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 20
+        ThrottlingRateLimit: 10
+      AccessLogSettings:
+        DestinationArn: !GetAtt ApiAccessLogGroup.Arn
+        Format: >-
+          {"requestId":"$context.requestId","ip":"$context.identity.sourceIp","method":"$context.httpMethod","route":"$context.routeKey","status":"$context.status","latency":"$context.responseLatency","principal":"$context.authorizer.claims.sub"}
+
+  # ---------- Observability (M7) ----------
+  ApiAccessLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/${AppName}/${Stage}/http-api-access"
+      RetentionInDays: 90
+
+Outputs:
+  ApiEndpoint:
+    Description: Base URL of the sync API
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/${Stage}"
+  UserPoolId:
+    Value: !Ref UserPool
+  UserPoolClientId:
+    Value: !Ref UserPoolClient
+  TableName:
+    Value: !Ref Table
+  Region:
+    Value: !Ref AWS::Region
