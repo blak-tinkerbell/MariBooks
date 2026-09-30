@@ -39,6 +39,7 @@ import {
   putShareLink,
   putTransaction,
 } from "./db.js";
+import { parseSms } from "./ai.js";
 
 type Event = APIGatewayProxyEventV2WithJWTAuthorizer;
 
@@ -108,6 +109,14 @@ export const handler = async (
         assertDeletable(id, locked);
         await deleteTransaction(tenantId, id);
         return json(204, {});
+      }
+
+      case "POST /parse": {
+        const body = parseBody<{ text?: string }>(event);
+        const text = (body.text ?? "").trim();
+        if (!text) return json(400, { error: "Paste the SMS text" });
+        if (text.length > 800) return json(400, { error: "That message is too long (800 characters max)" });
+        return json(200, await parseSms(text));
       }
 
       case "GET /rates":

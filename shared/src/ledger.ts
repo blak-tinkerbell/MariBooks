@@ -71,7 +71,7 @@ export function validateTransaction(input: NewTransactionInput): void {
         "Effective rate target must differ from the transaction currency",
       );
     }
-    if (!isValidAmount(input.effectiveRate.rate)) {
+    if (!isValidRate(input.effectiveRate.rate)) {
       throw new ValidationError("Effective rate must be a positive number");
     }
   }
@@ -127,6 +127,15 @@ export function assertDeletable(
     throw new LockedTransactionError(
       "This entry is part of a shared statement/passport and cannot be deleted",
     );
+  }
+}
+
+/** Rates can be small (e.g. 1 ZiG = 0.0365 USD), so validate them at rate precision, not 2dp. */
+function isValidRate(value: string): boolean {
+  try {
+    return toScaled(value, 8) > 0n;
+  } catch {
+    return false;
   }
 }
 

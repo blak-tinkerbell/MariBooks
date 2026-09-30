@@ -194,3 +194,22 @@ describe("API handler — idempotent + recoverable writes (task 14.5)", () => {
     expect(txns[0]!.id).toBe(TXN_ID);
   });
 });
+
+describe("POST /parse — paste a payment SMS", () => {
+  it("returns a draft from the rules parser (no Bedrock configured)", async () => {
+    const res = (await handler(
+      makeEvent({
+        routeKey: "POST /parse",
+        method: "POST",
+        body: { text: "EcoCash: You have received USD 25.00 from TENDAI MOYO. New wallet balance: USD 140.50" },
+      }),
+    )) as { statusCode: number; body: string };
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.body)).toMatchObject({ amount: "25.00", currency: "USD", direction: "IN", rail: "ECOCASH", source: "RULES" });
+  });
+
+  it("rejects an empty paste", async () => {
+    const res = (await handler(makeEvent({ routeKey: "POST /parse", method: "POST", body: { text: "  " } }))) as { statusCode: number };
+    expect(res.statusCode).toBe(400);
+  });
+});
