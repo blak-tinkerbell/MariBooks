@@ -16,7 +16,7 @@ hackathon. Category: `#commercial-potential` · Lane: `#startups`.
 ## What makes it different
 - **Honest multi-currency.** Amounts are stored in the currency they happened in and
   translated on demand — never silently mixed.
-- **Real vs official rates.** The owner enters the **street rate they actually transacted at**;
+- **Real vs official rates.** The owner enters the **market rate they actually transacted at**;
   a separate official reference table drives statutory-styled reports. Every figure shows its
   rate basis.
 - **Fees & IMTT modelled honestly**, separate from principal.

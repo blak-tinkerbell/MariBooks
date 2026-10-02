@@ -324,7 +324,7 @@ Logical records (physically stored in the DynamoDB single table described above)
 business_profile(id, name, tin, reporting_currency, created_at, updated_at)
 transaction(id, direction, amount, currency, rail, fee, imtt, category,
             date, note,
-            effective_rate_to, effective_rate,     // owner-entered street rate (nullable)
+            effective_rate_to, effective_rate,     // owner-entered market rate (nullable)
             is_asset, asset_class, asset_description,  // asset tagging (nullable)
             created_at, updated_at)
 official_rate(pair, date, rate, source, note)      // reference table; PK = pair+date

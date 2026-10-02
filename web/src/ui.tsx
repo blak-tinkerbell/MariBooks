@@ -31,7 +31,7 @@ export function ViewControls({ cur, basis, setCur, setBasis }: ViewProps) {
   return (
     <div className="view-controls">
       <Seg label="Show amounts in" value={cur} onChange={setCur} options={CURRENCIES.map((c) => ({ value: c, label: c }))} />
-      <Seg label="Exchange rate basis" value={basis} onChange={setBasis} options={[{ value: "EFFECTIVE", label: "Street rate" }, { value: "OFFICIAL", label: "Official" }]} />
+      <Seg label="Exchange rate basis" value={basis} onChange={setBasis} options={[{ value: "EFFECTIVE", label: "Market rate" }, { value: "OFFICIAL", label: "Official" }]} />
     </div>
   );
 }
@@ -69,5 +69,5 @@ export function Notice({ tone = "info", children }: { tone?: "info" | "warn" | "
 }
 
 export function basisLabel(basis: RateBasis) {
-  return basis === "EFFECTIVE" ? "Your street rate" : "Official reference rate";
+  return basis === "EFFECTIVE" ? "Your market rate" : "Official reference rate";
 }

@@ -45,6 +45,8 @@ posted on your Builder Center project before then. Verify each item against the 
 - [ ] `.kiro/specs/maribooks-mvp/design.md` present and current.
 - [ ] `.kiro/specs/maribooks-mvp/tasks.md` present and current.
 - [ ] These are reachable by judges (public repo or included in the project link).
+- [ ] `submission/JUDGE_WALKTHROUGH.md` present — a step-by-step tour using the demo business,
+      mapped to the judging axes.
 
 ## 5. Live app readiness (functional demo)
 - [ ] Two-tap capture of money in/out, currency (USD/ZiG) and rail selectable.

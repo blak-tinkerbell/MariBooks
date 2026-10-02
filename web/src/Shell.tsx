@@ -50,7 +50,7 @@ export function Shell({ route, data, email, onLeave, onResetDemo, banner, childr
           </nav>
           <div className="grow" />
           <div className="side-rate">
-            <div className="eyebrow gold">Your latest street rate</div>
+            <div className="eyebrow gold">Your latest market rate</div>
             {street.ZiG || street.ZAR ? (
               <>
                 {street.ZiG && <div className="num">1 USD = {street.ZiG.perUsd} ZiG</div>}

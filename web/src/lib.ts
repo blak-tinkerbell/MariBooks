@@ -87,7 +87,7 @@ export const ASSET_LABEL: Record<AssetClass, string> = {
 };
 
 /**
- * The owner's most recent street rate per foreign currency, as "1 USD = x".
+ * The owner's most recent market rate per foreign currency, as "1 USD = x".
  * Derived from the effective rates they entered on their own transactions.
  */
 export function latestStreetRates(txns: Transaction[]): Partial<Record<Currency, { perUsd: string; date: string }>> {

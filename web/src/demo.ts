@@ -1,7 +1,19 @@
 /**
- * Demo business: six months of realistic, deterministic sample activity so judges and new
- * visitors can explore every screen without signing up. Built with the real domain
- * `buildTransaction`, so the demo data passes the same validation as live data.
+ * Demo business: TS Haute Couture — Tryphine's boutique selling clothing and accessories
+ * across two branches. Six months of realistic, deterministic sample activity so judges and
+ * new visitors can explore every screen without signing up.
+ *
+ * The story this data tells:
+ *  - Two branches (Avondale & CBD) make daily USD sales across cash, card and mobile rails.
+ *  - Stock is imported from China and Turkey in USD, paid by bank transfer with IMTT.
+ *  - Business trips to source stock (flights, accommodation, transport) are operating costs.
+ *  - Store renovations and display mannequins are capital assets, kept out of profit.
+ *  - Account clients buy on credit through the month and settle in a lump sum at month-end.
+ *  - Rent, wages and bank/card fees land as fixed monthly costs.
+ *  - A little cross-border ZAR (South African buyers/suppliers) exercises multi-currency.
+ *
+ * Built with the real domain `buildTransaction`, so the demo passes the same validation as live
+ * data. Everything is deterministic (seeded RNG) so the figures are identical on every load.
  */
 import { buildTransaction, type NewTransactionInput, type Rail, type Transaction } from "@maribooks/shared";
 import { addDays, perUsdToRate, todayISO } from "./lib.js";
@@ -16,7 +28,7 @@ function mulberry32(seed: number) {
   };
 }
 
-export const DEMO_BUSINESS = "Chipo's Tuck Shop (demo)";
+export const DEMO_BUSINESS = "TS Haute Couture (demo)";
 
 export function seedDemo(today = todayISO()): Transaction[] {
   const rnd = mulberry32(20260930);
@@ -33,50 +45,109 @@ export function seedDemo(today = todayISO()): Transaction[] {
   };
   const imtt = (amount: number, rail: Rail) => (rail === "CASH" ? undefined : money(amount * 0.02));
 
+  // Boutique vocabulary.
+  const BRANCHES = ["Avondale branch", "CBD branch"];
+  const CLOTHING = ["Two-piece set", "Occasion dress", "Office blazer", "Denim range", "Ankara dress", "Jumpsuit", "Kaftan"];
+  const ACCESSORIES = ["Handbag", "Heels", "Statement necklace", "Scarf set", "Sunglasses", "Belt & clutch"];
+  // Month-end account clients who buy on credit and settle in a lump sum.
+  const CREDIT_CLIENTS = ["Mrs Dube (account)", "Chido B. (account)", "Rutendo M. (account)", "Mrs Ncube (account)"];
+
   const days = 182;
   for (let back = days; back >= 0; back--) {
     const date = addDays(today, -back);
     const dow = new Date(`${date}T12:00:00Z`).getUTCDay();
     const dom = Number(date.slice(8, 10));
-    const growth = 1 + ((days - back) / days) * 0.35; // the shop is growing
-    // Monthly fixed costs land even when the day is a Sunday.
-    if (dom === 1) add({ direction: "OUT", amount: "250.00", currency: "USD", rail: "BANK", category: "RENT", date, note: "Shop rent", imtt: "5.00" });
-    if (dom === 28) add({ direction: "OUT", amount: "300.00", currency: "USD", rail: "CASH", category: "WAGES", date, note: "Shop assistant wages" });
-    if (dom === 15) add({ direction: "OUT", amount: "4.50", currency: "USD", rail: "ECOCASH", category: "FEES", date, note: "Merchant account charges" });
-    if (back === 120) add({ direction: "OUT", amount: "420.00", currency: "USD", rail: "BANK", category: "OTHER", date, note: "Solar backup kit", isAsset: true, assetClass: "EQUIPMENT", assetDescription: "Solar backup kit", imtt: "8.40" });
-    if (back === 38) add({ direction: "OUT", amount: "650.00", currency: "USD", rail: "BANK", category: "OTHER", date, note: "Display fridge", isAsset: true, assetClass: "EQUIPMENT", assetDescription: "Display fridge", imtt: "13.00" });
-    if (dow === 0) continue; // closed on Sundays
+    const monthsIn = (days - back) / days;
+    const growth = 1 + monthsIn * 0.4; // the boutique is growing
 
-    // Sales in USD across rails.
-    const salesCount = 2 + Math.floor(rnd() * 3);
-    for (let s = 0; s < salesCount; s++) {
-      const rail = pick<Rail>(["CASH", "CASH", "ECOCASH", "ECOCASH", "INNBUCKS", "ONEMONEY"]);
-      add({ direction: "IN", amount: money(between(10, 62) * growth), currency: "USD", rail, category: "SALES", date, note: pick(["Groceries", "Bread & milk", "Airtime", "Cooldrinks", "Sugar & oil"]) });
+    // ---- Monthly fixed costs (land even on a Sunday) --------------------------------------
+    if (dom === 1) {
+      add({ direction: "OUT", amount: "900.00", currency: "USD", rail: "BANK", category: "RENT", date, note: "Avondale shop rent", imtt: "18.00" });
+      add({ direction: "OUT", amount: "750.00", currency: "USD", rail: "BANK", category: "RENT", date, note: "CBD shop rent", imtt: "15.00" });
     }
-    // ZiG sales at the street rate the owner got.
-    if (rnd() < 0.55) {
-      const street = between(27.0, 28.6).toFixed(2);
-      add({ direction: "IN", amount: money(between(150, 900) * growth), currency: "ZiG", rail: pick<Rail>(["CASH", "ECOCASH"]), category: "SALES", date, note: "ZiG sales", effectiveRate: { toCurrency: "USD", rate: perUsdToRate(street) } });
+    if (dom === 25) {
+      add({ direction: "OUT", amount: "320.00", currency: "USD", rail: "CASH", category: "WAGES", date, note: "Avondale shop assistants" });
+      add({ direction: "OUT", amount: "300.00", currency: "USD", rail: "CASH", category: "WAGES", date, note: "CBD shop assistants" });
     }
-    // Rand from cross-border customers.
-    if (rnd() < 0.25) {
+    if (dom === 15) add({ direction: "OUT", amount: "22.00", currency: "USD", rail: "CARD", category: "FEES", date, note: "Card machine (POS) monthly charges" });
+    if (dom === 5) add({ direction: "OUT", amount: "9.00", currency: "USD", rail: "ECOCASH", category: "FEES", date, note: "Merchant wallet charges" });
+
+    // ---- Month-end: account clients settle their running credit in a lump sum --------------
+    // Clients borrow stock through the month and pay at month-end (paid month-end as requested).
+    if (dom === 28) {
+      const settlers = 2 + Math.floor(rnd() * 2); // two to three clients settle
+      for (let c = 0; c < settlers; c++) {
+        const rail = pick<Rail>(["BANK", "ECOCASH", "CASH"]);
+        const amt = between(120, 380) * growth;
+        add({ direction: "IN", amount: money(amt), currency: "USD", rail, category: "SALES", date, note: `${pick(CREDIT_CLIENTS)} month-end settlement` });
+      }
+    }
+
+    // ---- Capital assets: store renovations and display mannequins --------------------------
+    if (back === 150) add({ direction: "OUT", amount: "2400.00", currency: "USD", rail: "BANK", category: "OTHER", date, note: "Avondale store renovation (shopfit)", isAsset: true, assetClass: "PROPERTY", assetDescription: "Avondale store renovation (shopfit)", imtt: "48.00" });
+    if (back === 132) add({ direction: "OUT", amount: "640.00", currency: "USD", rail: "BANK", category: "OTHER", date, note: "Display mannequins ×8", isAsset: true, assetClass: "FURNITURE", assetDescription: "Display mannequins ×8", imtt: "12.80" });
+    if (back === 70) add({ direction: "OUT", amount: "1850.00", currency: "USD", rail: "BANK", category: "OTHER", date, note: "CBD branch renovation & signage", isAsset: true, assetClass: "PROPERTY", assetDescription: "CBD branch renovation & signage", imtt: "37.00" });
+    if (back === 44) add({ direction: "OUT", amount: "520.00", currency: "USD", rail: "BANK", category: "OTHER", date, note: "Glass display shelving & rails", isAsset: true, assetClass: "FURNITURE", assetDescription: "Glass display shelving & rails", imtt: "10.40" });
+    if (back === 20) add({ direction: "OUT", amount: "380.00", currency: "USD", rail: "CARD", category: "OTHER", date, note: "Mannequins & mirror units", isAsset: true, assetClass: "FURNITURE", assetDescription: "Mannequins & mirror units", imtt: "7.60" });
+
+    // ---- Import stock from China & Turkey (USD, bank transfer, IMTT) ------------------------
+    // Large orders a few times across the six months, timed around sourcing trips.
+    if (back === 160) add({ direction: "OUT", amount: "3200.00", currency: "USD", rail: "BANK", category: "STOCK", date, note: "China order — clothing containers", imtt: "64.00" });
+    if (back === 118) add({ direction: "OUT", amount: "2100.00", currency: "USD", rail: "BANK", category: "STOCK", date, note: "Turkey order — dresses & handbags", imtt: "42.00" });
+    if (back === 76) add({ direction: "OUT", amount: "2850.00", currency: "USD", rail: "BANK", category: "STOCK", date, note: "China order — accessories & shoes", imtt: "57.00" });
+    if (back === 30) add({ direction: "OUT", amount: "2450.00", currency: "USD", rail: "BANK", category: "STOCK", date, note: "Turkey order — autumn range", imtt: "49.00" });
+
+    // ---- Business trips to source stock: flights, accommodation, transport -----------------
+    // A sourcing trip clusters its costs over a few days.
+    if (back === 164) add({ direction: "OUT", amount: "860.00", currency: "USD", rail: "CARD", category: "TRANSPORT", date, note: "Flights — Guangzhou sourcing trip" });
+    if (back === 163) add({ direction: "OUT", amount: "420.00", currency: "USD", rail: "CARD", category: "TRANSPORT", date, note: "Hotel — Guangzhou (4 nights)" });
+    if (back === 162) add({ direction: "OUT", amount: "95.00", currency: "USD", rail: "CASH", category: "TRANSPORT", date, note: "Taxis & market transport — China" });
+    if (back === 122) add({ direction: "OUT", amount: "540.00", currency: "USD", rail: "CARD", category: "TRANSPORT", date, note: "Flights — Istanbul sourcing trip" });
+    if (back === 121) add({ direction: "OUT", amount: "360.00", currency: "USD", rail: "CARD", category: "TRANSPORT", date, note: "Accommodation — Istanbul" });
+    if (back === 80) add({ direction: "OUT", amount: "890.00", currency: "USD", rail: "CARD", category: "TRANSPORT", date, note: "Flights — Guangzhou sourcing trip" });
+    if (back === 79) add({ direction: "OUT", amount: "450.00", currency: "USD", rail: "CARD", category: "TRANSPORT", date, note: "Hotel — Guangzhou (5 nights)" });
+    // Cross-border buying run to Johannesburg paid in rand.
+    if (back === 52) {
       const street = between(17.9, 18.6).toFixed(2);
-      add({ direction: "IN", amount: money(between(120, 600)), currency: "ZAR", rail: "CASH", category: "SALES", date, note: "Cross-border customer", effectiveRate: { toCurrency: "USD", rate: perUsdToRate(street) } });
+      add({ direction: "OUT", amount: money(between(2600, 3400)), currency: "ZAR", rail: "CARD", category: "STOCK", date, note: "Johannesburg stock run — fabrics & bags", effectiveRate: { toCurrency: "USD", rate: perUsdToRate(street) } });
+      add({ direction: "OUT", amount: money(between(900, 1300)), currency: "ZAR", rail: "CARD", category: "TRANSPORT", date, note: "Fuel & accommodation — Johannesburg", effectiveRate: { toCurrency: "USD", rate: perUsdToRate(street) } });
     }
-    // A weekly bulk order from a local school tuck-shop, paid by bank transfer.
-    if (dow === 2) add({ direction: "IN", amount: money(between(90, 180) * growth), currency: "USD", rail: "BANK", category: "SALES", date, note: "School tuck-shop bulk order" });
-    // Stock twice a week.
-    if (dow === 1 || dow === 4) {
-      const rail = pick<Rail>(["BANK", "ECOCASH", "CASH"]);
-      const amt = between(95, 240) * growth;
-      add({ direction: "OUT", amount: money(amt), currency: "USD", rail, category: "STOCK", date, note: pick(["Bread & milk stock", "Wholesale groceries", "Cooldrinks crate"]), imtt: imtt(amt, rail) });
-    }
-    if (dow === 3) {
-      const street = between(27.0, 28.6).toFixed(2);
-      add({ direction: "OUT", amount: money(between(900, 1900) * growth), currency: "ZiG", rail: "CASH", category: "STOCK", date, note: "Vegetables (market)", effectiveRate: { toCurrency: "USD", rate: perUsdToRate(street) } });
-    }
-    if (dow === 5) add({ direction: "OUT", amount: money(between(10, 32)), currency: "USD", rail: "CASH", category: "TRANSPORT", date, note: "Kombi to wholesaler" });
 
+    if (dow === 0) continue; // both branches closed on Sundays
+
+    // ---- Daily walk-in sales across both branches (USD) ------------------------------------
+    const salesCount = 3 + Math.floor(rnd() * 4);
+    for (let s = 0; s < salesCount; s++) {
+      const rail = pick<Rail>(["CARD", "CARD", "CASH", "ECOCASH", "ECOCASH", "INNBUCKS", "ONEMONEY"]);
+      const item = rnd() < 0.6 ? pick(CLOTHING) : pick(ACCESSORIES);
+      add({ direction: "IN", amount: money(between(18, 140) * growth), currency: "USD", rail, category: "SALES", date, note: `${item} · ${pick(BRANCHES)}` });
+    }
+    // Occasion/bridal higher-value sale on busy days.
+    if (dow === 5 || dow === 6) {
+      add({ direction: "IN", amount: money(between(180, 420) * growth), currency: "USD", rail: pick<Rail>(["CARD", "BANK"]), category: "SALES", date, note: `Occasion outfit · ${pick(BRANCHES)}` });
+    }
+    // South African cross-border customers paying in rand.
+    if (rnd() < 0.2) {
+      const street = between(17.9, 18.6).toFixed(2);
+      add({ direction: "IN", amount: money(between(300, 900)), currency: "ZAR", rail: "CASH", category: "SALES", date, note: `Cross-border customer · ${pick(BRANCHES)}`, effectiveRate: { toCurrency: "USD", rate: perUsdToRate(street) } });
+    }
+    // Occasional local ZiG sale at the market rate the owner got.
+    if (rnd() < 0.15) {
+      const street = between(27.0, 28.6).toFixed(2);
+      add({ direction: "IN", amount: money(between(400, 1400) * growth), currency: "ZiG", rail: pick<Rail>(["CASH", "ECOCASH"]), category: "SALES", date, note: "ZiG sale · CBD branch", effectiveRate: { toCurrency: "USD", rate: perUsdToRate(street) } });
+    }
+
+    // ---- Local running costs ---------------------------------------------------------------
+    // Mid-week local restock top-ups (packaging, trims, local wholesale).
+    if (dow === 2) {
+      const rail = pick<Rail>(["ECOCASH", "CASH", "CARD"]);
+      const amt = between(60, 180) * growth;
+      add({ direction: "OUT", amount: money(amt), currency: "USD", rail, category: "STOCK", date, note: pick(["Packaging & garment bags", "Local wholesale tops", "Trims & hangers"]), imtt: imtt(amt, rail) });
+    }
+    // Deliveries between branches / to clients.
+    if (dow === 4) add({ direction: "OUT", amount: money(between(8, 24)), currency: "USD", rail: "CASH", category: "TRANSPORT", date, note: "Delivery between branches" });
+    // Marketing (photoshoots, boosted posts).
+    if (dow === 3 && rnd() < 0.5) add({ direction: "OUT", amount: money(between(20, 70)), currency: "USD", rail: "CARD", category: "OTHER", date, note: pick(["Social media promotion", "Lookbook photoshoot", "Flyers & tags"]) });
   }
   return out;
 }

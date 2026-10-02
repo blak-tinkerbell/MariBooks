@@ -59,12 +59,12 @@ export function Settings({ data }: { data: AppData }) {
 
   return (
     <>
-      <PageHeader title="Rates & settings" sub="Your street rates come from your own entries. Official rates drive statutory-style reports." />
+      <PageHeader title="Rates & settings" sub="Your market rates come from your own entries. Official rates drive statutory-style reports." />
 
       <section className="grid-2 align-start">
         <div className="stack">
           <div className="card stack-sm">
-            <h2>Your street rates</h2>
+            <h2>Your market rates</h2>
             <p className="muted">The rate you actually got, taken from your latest ZiG and ZAR entries.</p>
             {streets.ZiG || streets.ZAR ? (
               <table className="table fin">

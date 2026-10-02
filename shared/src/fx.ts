@@ -1,7 +1,7 @@
 /**
  * FX engine — dual basis, multi-currency (USD / ZiG / ZAR).
  *
- * EFFECTIVE basis: uses the street rate the owner entered on the transaction itself.
+ * EFFECTIVE basis: uses the market rate the owner entered on the transaction itself.
  * OFFICIAL  basis: uses a maintained, dated reference-rate table (for statutory-styled reports).
  *
  * A street/effective rate is NEVER presented as the statutory basis; the basis label travels

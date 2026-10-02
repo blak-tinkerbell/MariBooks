@@ -143,7 +143,7 @@ export function Statement({ data }: { data: AppData }) {
               <h2>Record checks</h2>
               <ul className="checklist">
                 <Check ok={scoped.length > 0} text={`${scoped.length} entries in this period`} />
-                <Check ok={scoped.filter((t) => t.currency !== "USD").every((t) => !!t.effectiveRate)} text="Every ZiG/ZAR entry has a street rate" />
+                <Check ok={scoped.filter((t) => t.currency !== "USD").every((t) => !!t.effectiveRate)} text="Every ZiG/ZAR entry has a market rate" />
                 <Check ok={scoped.every((t) => !t.isAsset || !!t.assetClass)} text="Assets are classified" />
               </ul>
             </div>
