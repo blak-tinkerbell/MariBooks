@@ -3,7 +3,7 @@ import { getPassport, type ShareLink } from "@maribooks/shared";
 import type { AppData } from "../App.js";
 import { UnauthorizedError } from "../api.js";
 import { Chevrons, Icon, Logo } from "../icons.js";
-import { ASSET_LABEL, fmt, longDate, todayISO } from "../lib.js";
+import { ASSET_LABEL, fmt, isNeg, longDate, todayISO } from "../lib.js";
 import { basisLabel, FieldError, Notice, PageHeader, ViewControls } from "../ui.js";
 import { readiness } from "./readiness.js";
 
@@ -45,11 +45,37 @@ export function Passport({ data }: { data: AppData }) {
   }
 
   const ready = readiness(txns, p);
-  const months = new Set(txns.map((t) => t.date.slice(0, 7))).size;
   const stab = STABILITY[p.cashFlowStability] ?? STABILITY.VARIABLE!;
   const lenderErr = lender.trim().length < 2 ? "Enter who you're sharing with (2+ characters)." : lender.trim().length > 60 ? "Keep the name under 60 characters." : "";
   const consentErr = consent ? "" : "Tick the box to confirm you agree to share.";
   const assetsByClass = Object.entries(p.declaredAssetBase.byClass);
+
+  // Average turnover is over the full span, counting quiet months; say so plainly.
+  const avgNote = p.monthsInPeriod <= 1
+    ? "Over 1 month"
+    : p.hasContinuousMonths
+      ? `Over ${p.monthsInPeriod} months`
+      : `Over ${p.monthsInPeriod} months (${p.activeMonths} with sales)`;
+
+  // "Record span" is first-to-last, not a continuity guarantee — be honest about which it is.
+  const spanNote = p.recordSpanDays >= 90
+    ? p.hasContinuousMonths
+      ? "Entries in every month — lenders look for 3+"
+      : "First to last entry; some months have no sales"
+    : `${Math.max(0, 90 - p.recordSpanDays)} days to 3 months`;
+
+  // Net profit tone + plain note; money-out is operating costs only (assets shown separately).
+  const profitTone = isNeg(p.netProfit) ? "warn" : "good";
+  const profitNote = isNeg(p.netProfit)
+    ? "Spent more than earned over the period"
+    : "Money-in less operating costs (assets excluded)";
+
+  const assetClassList = assetsByClass.map(([k]) => ASSET_LABEL[k as keyof typeof ASSET_LABEL].split(" (")[0]).join(", ");
+  const assetSpan = p.assetsAcquiredFrom && p.assetsAcquiredTo
+    ? p.assetsAcquiredFrom === p.assetsAcquiredTo
+      ? `${assetClassList} · acquired ${longDate(p.assetsAcquiredFrom)}`
+      : `${assetClassList} · ${longDate(p.assetsAcquiredFrom)} – ${longDate(p.assetsAcquiredTo)}`
+    : null;
 
   async function create(e: FormEvent) {
     e.preventDefault();
@@ -110,13 +136,15 @@ export function Passport({ data }: { data: AppData }) {
           </div>
         </div>
         <div className="grid-2">
-          <Metric label="Avg monthly turnover" value={fmt(p.avgMonthlyTurnover, cur)} note={`Over ${months} month${months === 1 ? "" : "s"}`} />
+          <Metric label="Avg monthly turnover" value={fmt(p.avgMonthlyTurnover, cur)} note={avgNote} />
+          <Metric label="Net profit" value={fmt(p.netProfit, cur)} note={profitNote} tone={profitTone} />
+          <Metric label="Money out (operating)" value={fmt(p.totalMoneyOut, cur)} note="Operating costs, fees & IMTT — assets excluded" />
           <Metric label="Cash-flow stability" value={stab.label} note={stab.note} tone={p.cashFlowStability === "STRONG" ? "good" : "warn"} />
-          <Metric label="Continuous records" value={`${p.continuousRecordDays} days`} note={p.continuousRecordDays >= 90 ? "Lenders usually look for 3+ months" : `${Math.max(0, 90 - p.continuousRecordDays)} days to 3 months`} tone={p.continuousRecordDays >= 90 ? "good" : "warn"} />
-          <Metric label="Declared assets" value={fmt(p.declaredAssetBase.total, cur)} note={assetsByClass.length ? assetsByClass.map(([k]) => ASSET_LABEL[k as keyof typeof ASSET_LABEL].split(" (")[0]).join(", ") : "None declared yet"} />
+          <Metric label="Record span" value={`${p.recordSpanDays} days`} note={spanNote} tone={p.recordSpanDays >= 90 ? "good" : "warn"} />
+          <Metric label="Declared assets" value={fmt(p.declaredAssetBase.total, cur)} note={assetSpan ?? "None declared yet"} />
         </div>
       </section>
-      <p className="fine">Turnover is the total of money-in you recorded. Assets are your declared purchase cost, not a valuation.</p>
+      <p className="fine">Turnover is the total of money-in you recorded; net profit is turnover less operating costs, fees and IMTT. Record span is the time from your first to your latest entry, not a guarantee of unbroken records. Assets are your declared purchase cost, not a valuation.</p>
 
       <section className="grid-passport no-print">
         <div className="card flush">

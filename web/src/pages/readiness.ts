@@ -9,7 +9,7 @@ export function readiness(txns: Transaction[], passport: Passport) {
   const foreign = txns.filter((t) => t.currency !== "USD");
   const items = [
     { label: `3+ months of records (${months} so far)`, ok: months >= 3 },
-    { label: "Every ZiG/ZAR entry has a street rate", ok: foreign.every((t) => !!t.effectiveRate) },
+    { label: "Every ZiG/ZAR entry has a market rate", ok: foreign.every((t) => !!t.effectiveRate) },
     { label: "Assets declared", ok: txns.some((t) => t.isAsset) },
     { label: "Steady monthly turnover", ok: passport.cashFlowStability === "STRONG" },
   ];

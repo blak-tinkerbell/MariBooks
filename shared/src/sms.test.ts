@@ -39,7 +39,7 @@ describe("parseMoneySms", () => {
 });
 
 describe("small effective rates", () => {
-  it("accepts a street rate below 0.01 (e.g. 1 ZiG = 0.0365 USD)", () => {
+  it("accepts a market rate below 0.01 (e.g. 1 ZiG = 0.0365 USD)", () => {
     const t = buildTransaction({
       id: "r1", direction: "IN", amount: "100.00", currency: "ZiG", rail: "CASH", category: "SALES",
       date: "2026-09-30", effectiveRate: { toCurrency: "USD", rate: "0.00365" },

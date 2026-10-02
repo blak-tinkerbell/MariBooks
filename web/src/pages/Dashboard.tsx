@@ -64,7 +64,7 @@ export function Dashboard({ data }: { data: AppData }) {
       <>
         {header}
         <Notice tone="error">
-          We couldn't convert some entries: {model.error}. <a href="#/settings">Add an official rate</a> or switch to your street rate.
+          We couldn't convert some entries: {model.error}. <a href="#/settings">Add an official rate</a> or switch to your market rate.
         </Notice>
       </>
     );
@@ -237,7 +237,7 @@ function EmptyState() {
       <section className="grid-3">
         {[
           ["1", "Record today's money", "Sales in, stock and rent out. Add the fee or IMTT as a percentage so it isn't lost.", "#/record", "Record money"],
-          ["2", "Use your street rate", "Paid in ZiG or rand? Enter the rate you actually got. Profit is worked out with it.", "#/record", "Record a ZiG sale"],
+          ["2", "Use your market rate", "Paid in ZiG or rand? Enter the rate you actually got. Profit is worked out with it.", "#/record", "Record a ZiG sale"],
           ["3", "Tag big purchases as assets", "A fridge isn't a cost of the month. Assets build your credit passport.", "#/passport", "About the passport"],
         ].map(([n, t, b, href, cta]) => (
           <div key={n} className="card step">

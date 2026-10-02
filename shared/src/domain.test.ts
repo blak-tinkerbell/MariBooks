@@ -163,6 +163,56 @@ describe("passport", () => {
     expect(p.totalTurnover).toBe("250.00");
     expect(p.declaredAssetBase.total).toBe("500.00");
     expect(p.periodCovered).toEqual({ from: "2026-01-05", to: "2026-02-05" });
+    // Asset is excluded from operating money-out; net profit is turnover less operating costs.
+    expect(p.totalMoneyOut).toBe("0.00");
+    expect(p.netProfit).toBe("250.00");
+    // Jan + Feb are contiguous, so the span is fully covered.
+    expect(p.monthsInPeriod).toBe(2);
+    expect(p.activeMonths).toBe(2);
+    expect(p.hasContinuousMonths).toBe(true);
+    expect(p.avgMonthlyTurnover).toBe("125.00");
+    expect(p.recordSpanDays).toBe(32); // 5 Jan → 5 Feb inclusive
+    // Asset acquisition dates are surfaced for lender context.
+    expect(p.assetsAcquiredFrom).toBe("2026-01-10");
+    expect(p.assetsAcquiredTo).toBe("2026-01-10");
+  });
+
+  it("reports money-out and net profit, excluding asset spend from the operating side", () => {
+    const txns: Transaction[] = [
+      tx({ id: "a", direction: "IN", amount: "300.00", currency: "USD", rail: "ECOCASH", category: "SALES", date: "2026-01-05" }),
+      tx({ id: "b", direction: "OUT", amount: "120.00", currency: "USD", rail: "CASH", category: "STOCK", date: "2026-01-08" }),
+      tx({ id: "c", direction: "OUT", amount: "500.00", currency: "USD", rail: "BANK", category: "OTHER", date: "2026-01-10", isAsset: true, assetClass: "EQUIPMENT" }),
+    ];
+    const p = getPassport(txns, "USD", "EFFECTIVE", new OfficialRateTable(), "2026-02-01T00:00:00Z");
+    expect(p.totalTurnover).toBe("300.00");
+    expect(p.totalMoneyOut).toBe("120.00"); // operating only; the 500 asset is excluded
+    expect(p.netProfit).toBe("180.00");
+  });
+
+  it("averages over the full span and flags a gap month as not continuous", () => {
+    // Income in Jan and Mar, nothing in Feb: span is 3 months but only 2 are active.
+    const txns: Transaction[] = [
+      tx({ id: "a", direction: "IN", amount: "100.00", currency: "USD", rail: "CASH", category: "SALES", date: "2026-01-10" }),
+      tx({ id: "b", direction: "IN", amount: "200.00", currency: "USD", rail: "CASH", category: "SALES", date: "2026-03-10" }),
+    ];
+    const p = getPassport(txns, "USD", "EFFECTIVE", new OfficialRateTable(), "2026-04-01T00:00:00Z");
+    expect(p.monthsInPeriod).toBe(3);
+    expect(p.activeMonths).toBe(2);
+    expect(p.hasContinuousMonths).toBe(false);
+    // 300 total / 3 months in the span (quiet February counts), not /2.
+    expect(p.avgMonthlyTurnover).toBe("100.00");
+  });
+
+  it("returns a safe empty passport when there is no income", () => {
+    const txns: Transaction[] = [
+      tx({ id: "a", direction: "OUT", amount: "40.00", currency: "USD", rail: "CASH", category: "STOCK", date: "2026-01-05" }),
+    ];
+    const p = getPassport(txns, "USD", "EFFECTIVE", new OfficialRateTable(), "2026-02-01T00:00:00Z");
+    expect(p.periodCovered).toBeNull();
+    expect(p.totalTurnover).toBe("0");
+    expect(p.netProfit).toBe("0");
+    expect(p.monthsInPeriod).toBe(0);
+    expect(p.hasContinuousMonths).toBe(false);
   });
 });
 

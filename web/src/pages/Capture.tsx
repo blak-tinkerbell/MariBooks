@@ -254,7 +254,7 @@ export function Capture({ data }: { data: AppData }) {
 
             {f.currency !== BASE && (
               <div className="field span-2">
-                <label htmlFor="street">Street rate you got <span className="req" aria-hidden="true">*</span></label>
+                <label htmlFor="street">Market rate you got <span className="req" aria-hidden="true">*</span></label>
                 <div className={`input-wrap ${show("street") ? "invalid" : ""}`}>
                   <span className="affix">1 USD =</span>
                   <input id="street" className="num" inputMode="decimal" value={f.street} onChange={(e) => set({ street: e.target.value })} onBlur={blur("street")} aria-invalid={!!show("street")} aria-describedby="street-help err-street" />

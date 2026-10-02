@@ -29,8 +29,8 @@ MariBooks answers that question in one screen and turns the same records into a 
 | **Record money in seconds** | Money in / out, in USD, ZiG or ZAR, on cash, EcoCash, OneMoney, InnBucks, Zipit, bank or card. Every amount stays in the currency it happened in. |
 | **Paste the SMS instead of typing** | Paste an EcoCash, InnBucks or bank confirmation SMS and the form fills itself: amount, currency, direction, rail, fee, IMTT, reference, date. It never reads the running balance as the amount. |
 | **Fees and IMTT as percentages** | Enter "2%" and MariBooks works out the charge and keeps it separate from the principal, so profit is honest. |
-| **The rate you actually got** | For ZiG and ZAR the owner enters the **street rate** they traded at. A separate **official** rate table drives statutory-style reports. Every figure shows which basis it uses. |
-| **"Are you making money?"** | Dashboard: profit for the period with the change on the previous one, money in, operating costs, asset spend, fees & IMTT, six-month profit trend, cash by payment method, recent activity. Switch the view between USD / ZiG / ZAR and street / official in one tap. |
+| **The rate you actually got** | For ZiG and ZAR the owner enters the **market rate** they traded at. A separate **official** rate table drives statutory-style reports. Every figure shows which basis it uses. |
+| **"Are you making money?"** | Dashboard: profit for the period with the change on the previous one, money in, operating costs, asset spend, fees & IMTT, six-month profit trend, cash by payment method, recent activity. Switch the view between USD / ZiG / ZAR and market / official in one tap. |
 | **Assets kept out of profit** | Buying a fridge doesn't wreck a month's profit. It's tagged as an asset and builds the declared asset base. |
 | **Lender-ready statement** | Income statement for any period: money in, operating costs by category, net profit and margin, assets below the line, rate basis and currency mix disclosed. Download as PDF. |
 | **Credit passport, with consent** | Average monthly turnover, cash-flow stability, continuous-record length, declared assets, and a 4-point readiness check. Shared only after explicit consent, revocable at any time. Entries in an active share are locked, so a lender always sees exactly what was sent. |
@@ -40,7 +40,7 @@ MariBooks answers that question in one screen and turns the same records into a 
 ## Creativity & storytelling
 
 - **One question, answered first.** The landing screen is literally "Are you making money?" with a yes/no sentence, not a ledger.
-- **Built for how money moves in Zimbabwe:** three currencies, seven payment rails, IMTT, a street rate that differs from the official one. These aren't edge cases here; they're every day.
+- **Built for how money moves in Zimbabwe:** three currencies, seven payment rails, IMTT, a market rate that differs from the official one. These aren't edge cases here; they're every day.
 - **The design carries the place.** The chevron pattern throughout the app comes from the walls of Great Zimbabwe; deep teal and marigold are the palette.
 - **One record, three beneficiaries:** the owner sees profit, the lender sees a trustworthy history, and the same data can later feed tax compliance.
 
@@ -84,8 +84,12 @@ Concrete moments:
 
 ## Try it (60 seconds)
 
+> For a guided, step-by-step tour mapped to the judging axes, see
+> [**JUDGE_WALKTHROUGH.md**](./JUDGE_WALKTHROUGH.md). It uses the pre-loaded demo business
+> (*TS Haute Couture*, a two-branch boutique) so every screen has data to show.
+
 1. Open **https://d3vn6ch6zctfj4.cloudfront.net/?demo**.
-2. **Dashboard:** switch USD → ZiG → ZAR and Street rate → Official. Every figure recalculates and says which basis it uses.
+2. **Dashboard:** switch USD → ZiG → ZAR and Market rate → Official. Every figure recalculates and says which basis it uses.
 3. **Record money:** paste `You paid ZWG 1,240.00 to Musa Wholesale on 28/09/2026. Charge: ZWG 12.40 IMTT: ZWG 24.80 Ref 7HX2K9` into "Paste a payment SMS" → **Fill the form**. Try an amount like `12.345` or a fee of `150` to see validation.
 4. **Statement:** pick a period → **Download PDF**.
 5. **Credit passport:** share with a lender (consent required), then revoke it.

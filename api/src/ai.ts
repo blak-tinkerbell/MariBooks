@@ -77,7 +77,7 @@ export async function parseSms(text: string): Promise<SmsDraft> {
         inferenceConfig: { maxTokens: 300, temperature: 0 },
       }),
     );
-    const reply = res.output?.message?.content?.find((c) => "text" in c)?.text ?? "";
+    const reply = res.output?.message?.content?.find((c): c is { text: string } => "text" in c)?.text ?? "";
     const json = reply.slice(reply.indexOf("{"), reply.lastIndexOf("}") + 1);
     const ai = pick(JSON.parse(json) as Record<string, unknown>);
     // Rules win where they found something; the model fills the gaps.

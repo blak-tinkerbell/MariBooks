@@ -11,7 +11,7 @@ owners keep their books on scraps of paper or in their heads. The result is thre
    IMTT charges that are never recorded honestly, so owners cannot tell what they actually
    earned.
 2. **There is no single view of the money.** Because value sits in several currencies at once
-   (USD, ZiG and, in parts of the country, ZAR) — often exchanged at a street rate that differs
+   (USD, ZiG and, in parts of the country, ZAR) — often exchanged at a market rate that differs
    from the official one — owners cannot see, in one currency of their choice, whether the
    business is making money.
 3. **There is no trusted financial record.** With no consolidated record from a system of
@@ -74,7 +74,7 @@ currency and payment method it actually happened, so that capture is effortless 
 
 ### Requirement 3 — Multi-currency FX: owner-entered effective rate + official reference rate
 **User story:** As an owner, I want my numbers to reflect the rate I actually transacted at
-(the prevailing street rate), while still being able to produce statutory reports at the
+(the prevailing market rate), while still being able to produce statutory reports at the
 official rate, so that my books are honest and my filings are defensible.
 
 The reality in Zimbabwe is that the street/effective rate an owner actually uses often differs
@@ -212,7 +212,7 @@ tools) recorded as assets, so that I can show what I own and use it to secure fu
 - **Honest, owner-driven FX:** the owner enters the prevailing (effective) rate they actually
   transacted at, which drives their own view; a separate maintained official/reference rate
   table drives statutory-styled reports. No rate is hard-coded, every figure discloses its rate
-  basis, and street rates are never presented as the statutory basis. No statutory tax is
+  basis, and market rates are never presented as the statutory basis. No statutory tax is
   computed (a "verify with ZIMRA/advisor" note accompanies official-basis figures).
 - **Security:** data encrypted at rest (customer-managed keys) and in transit (TLS); access to
   financial data requires authentication; least-privilege throughout.

@@ -152,7 +152,7 @@ export class LiveStore implements DataStore {
 }
 
 // ---------------------------------------------------------------- demo
-const DEMO_KEY = "mb.demo.v1";
+const DEMO_KEY = "mb.demo.v2";
 
 interface DemoState {
   txns: Transaction[];
@@ -172,7 +172,7 @@ export class DemoStore implements DataStore {
 
   private fresh(): DemoState {
     const txns = seedDemo();
-    const share = sharePassport({ id: "demo-share-1", consentAck: true, currency: "USD", basis: "EFFECTIVE", transactionIds: txns.map((t) => t.id), note: "Harare Microfinance (example)" });
+    const share = sharePassport({ id: "demo-share-1", consentAck: true, currency: "USD", basis: "EFFECTIVE", transactionIds: txns.map((t) => t.id), note: "Women in Business Fund (example)" });
     return { txns, shares: [share], rates: SAMPLE_OFFICIAL_RATES, name: DEMO_BUSINESS };
   }
   private load(): DemoState | null {

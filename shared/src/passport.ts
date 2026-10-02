@@ -7,6 +7,7 @@
 import { assetSummary, type AssetSummary } from "./assets.js";
 import { OfficialRateTable, translate } from "./fx.js";
 import { add, fromScaled, toScaled } from "./money.js";
+import { getDashboard } from "./reporting.js";
 import type {
   Currency,
   ISODate,
@@ -20,10 +21,17 @@ export type Stability = "STRONG" | "MODERATE" | "VARIABLE";
 export interface Passport {
   periodCovered: { from: ISODate; to: ISODate } | null;
   totalTurnover: string; // verified = sum of captured money-in, in reporting currency
-  avgMonthlyTurnover: string;
+  avgMonthlyTurnover: string; // totalTurnover / months spanned by the record (incl. empty months)
+  totalMoneyOut: string; // operating money-out over the period (assets excluded), reporting currency
+  netProfit: string; // totalTurnover - totalMoneyOut; may be negative
   cashFlowStability: Stability;
-  continuousRecordDays: number;
+  recordSpanDays: number; // calendar days from first to last income entry (span, not continuity)
+  activeMonths: number; // distinct months that actually have income
+  monthsInPeriod: number; // calendar months the record spans, empty months included
+  hasContinuousMonths: boolean; // true when every month in the span has at least one income entry
   declaredAssetBase: AssetSummary;
+  assetsAcquiredFrom: ISODate | null; // earliest asset acquisition date
+  assetsAcquiredTo: ISODate | null; // latest asset acquisition date
   currency: Currency;
   generatedAt: ISODate;
 }
@@ -39,16 +47,34 @@ function daysBetween(from: ISODate, to: ISODate): number {
   return Math.floor((b - a) / 86_400_000) + 1;
 }
 
-/** Coefficient of variation of monthly turnover, bucketed into three explainable bands. */
-function stabilityFromMonthly(monthlyTotals: number[]): Stability {
-  if (monthlyTotals.length < 2) return "VARIABLE";
-  const mean =
-    monthlyTotals.reduce((a, b) => a + b, 0) / monthlyTotals.length;
-  if (mean === 0) return "VARIABLE";
-  const variance =
-    monthlyTotals.reduce((a, b) => a + (b - mean) ** 2, 0) /
-    monthlyTotals.length;
-  const cv = Math.sqrt(variance) / mean;
+/** Count of calendar months spanned by [from, to] inclusive, counting empty months. */
+function monthsSpanned(from: ISODate, to: ISODate): number {
+  const [fy, fm] = from.slice(0, 7).split("-").map(Number);
+  const [ty, tm] = to.slice(0, 7).split("-").map(Number);
+  if (!fy || !fm || !ty || !tm) return 1;
+  return Math.max(1, (ty - fy) * 12 + (tm - fm) + 1);
+}
+
+/**
+ * Coefficient of variation of monthly turnover, bucketed into three explainable bands.
+ * Operates on scaled minor units (BigInt) so money never passes through a binary float; only
+ * the final dimensionless ratio uses floating point.
+ */
+function stabilityFromMonthly(monthlyTotals: bigint[]): Stability {
+  const n = monthlyTotals.length;
+  if (n < 2) return "VARIABLE";
+  const count = BigInt(n);
+  const total = monthlyTotals.reduce((a, b) => a + b, 0n);
+  if (total === 0n) return "VARIABLE";
+  const meanScaled = total / count; // minor units
+  // Variance in (minor units)^2, kept in BigInt; mean of squared deviations.
+  const varianceScaled =
+    monthlyTotals.reduce((a, b) => {
+      const d = b - meanScaled;
+      return a + d * d;
+    }, 0n) / count;
+  // cv = sqrt(variance) / mean. Both share the same scale, so the ratio is scale-free.
+  const cv = Math.sqrt(Number(varianceScaled)) / Number(meanScaled);
   if (cv <= 0.25) return "STRONG";
   if (cv <= 0.6) return "MODERATE";
   return "VARIABLE";
@@ -63,15 +89,28 @@ export function getPassport(
 ): Passport {
   const income = txns.filter((t) => t.direction === "IN");
   const assets = assetSummary(txns, currency, basis, rates);
+  const assetDates = txns
+    .filter((t) => t.direction === "OUT" && t.isAsset && t.assetClass)
+    .map((t) => t.date)
+    .sort();
+  const assetsAcquiredFrom = assetDates[0] ?? null;
+  const assetsAcquiredTo = assetDates[assetDates.length - 1] ?? null;
 
   if (income.length === 0) {
     return {
       periodCovered: null,
       totalTurnover: "0",
       avgMonthlyTurnover: "0",
+      totalMoneyOut: "0",
+      netProfit: "0",
       cashFlowStability: "VARIABLE",
-      continuousRecordDays: 0,
+      recordSpanDays: 0,
+      activeMonths: 0,
+      monthsInPeriod: 0,
+      hasContinuousMonths: false,
       declaredAssetBase: assets,
+      assetsAcquiredFrom,
+      assetsAcquiredTo,
       currency,
       generatedAt: now,
     };
@@ -81,31 +120,50 @@ export function getPassport(
   const from = dates[0]!;
   const to = dates[dates.length - 1]!;
 
-  // Turnover in reporting currency + per-month buckets.
-  let totalTurnover = "0";
-  const monthly = new Map<string, string>();
+  // The reporting window for costs/profit spans ALL activity, not just income dates, so an
+  // expense recorded before the first sale or after the last is never silently dropped.
+  const allDates = txns.map((t) => t.date).sort();
+  const activityFrom = allDates[0]!;
+  const activityTo = allDates[allDates.length - 1]!;
+
+  // Turnover in reporting currency + per-month buckets (scaled minor units).
+  let totalScaled = 0n;
+  const monthly = new Map<string, bigint>();
   for (const t of income) {
-    const val = translate(t, currency, basis, rates).value;
-    totalTurnover = add(totalTurnover, val);
+    const scaled = toScaled(translate(t, currency, basis, rates).value);
+    totalScaled += scaled;
     const k = monthKey(t.date);
-    monthly.set(k, add(monthly.get(k) ?? "0", val));
+    monthly.set(k, (monthly.get(k) ?? 0n) + scaled);
   }
+  const totalTurnover = fromScaled(totalScaled);
 
-  const monthCount = Math.max(1, monthly.size);
-  const avgMonthlyTurnover = fromScaled(
-    toScaled(totalTurnover) / BigInt(monthCount),
-  );
+  // Average over the full span (empty months included), so a quiet month isn't hidden.
+  const monthsInPeriod = monthsSpanned(from, to);
+  const activeMonths = monthly.size;
+  const avgMonthlyTurnover = fromScaled(totalScaled / BigInt(monthsInPeriod));
+  const hasContinuousMonths = activeMonths === monthsInPeriod;
 
-  const monthlyNumbers = [...monthly.values()].map((v) => Number(v));
-  const stability = stabilityFromMonthly(monthlyNumbers);
+  const stability = stabilityFromMonthly([...monthly.values()]);
+
+  // Money-out and net profit come from the shared reporting engine (assets excluded from
+  // profit), so the passport and the dashboard/statement always agree. Scoped to the full
+  // activity span so costs outside the income window still count.
+  const dash = getDashboard(txns, { from: activityFrom, to: activityTo }, currency, basis, rates);
 
   return {
     periodCovered: { from, to },
     totalTurnover,
     avgMonthlyTurnover,
+    totalMoneyOut: dash.operatingOut,
+    netProfit: dash.profit,
     cashFlowStability: stability,
-    continuousRecordDays: daysBetween(from, to),
+    recordSpanDays: daysBetween(from, to),
+    activeMonths,
+    monthsInPeriod,
+    hasContinuousMonths,
     declaredAssetBase: assets,
+    assetsAcquiredFrom,
+    assetsAcquiredTo,
     currency,
     generatedAt: now,
   };
