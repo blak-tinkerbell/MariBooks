@@ -131,11 +131,9 @@ A full guided tour mapped to the judging criteria is in [JUDGE_WALKTHROUGH.md](h
 ## Where it's headed (Startups lane)
 
 - **Business model:** free for owners to record and see profit. Lenders and microfinance institutions pay for verified, consented passports and statements. Growing SMEs pay for tax-ready reports. The owner never pays for the thing that makes her bankable.
-- **Route to market:** MariBooks is incubated by Ushauri Consulting, an AWS Advanced Tier Services Partner focused on financial services across Zimbabwe and South Africa. That gives the product a direct route to the lender side of the marketplace, the side that pays. A feasibility study and product concept were completed before the build.
+- **Route to market:** The product has a direct route to the lender side of the marketplace, the side that pays. 
 - **Phase 2:** Amazon Textract receipt and invoice scanning, so a photo of a slip becomes a prefilled entry backed by verifiable proof. Alongside it, a full double-entry layer with general ledger, chart of accounts, trial balance with suspense account, cashbook, bank reconciliation and period close, producing a Statement of Financial Position alongside the income statement ([spec](https://github.com/blak-tinkerbell/MariBooks/blob/main/.kiro/specs/maribooks-accounting/README.md)).
-- **After that:** a lender view through the share link, WhatsApp and USSD capture for feature phones, ZIMRA fiscal-invoice integration, and Shona and Ndebele.
+- **After that:** a lender view through the share link, WhatsApp and USSD capture for feature phones, ZIMRA fiscal-invoice integration
 - **Flywheel:** the more an owner records, the stronger her passport, and the more reason to keep recording.
 
-## Builder
 
-Phyllis Tarisai Madaba, Co-founder and Principal Solution Architect, Ushauri Consulting. AWS Community Builder holding all fourteen AWS certifications. MariBooks is an original application built for Zero to Shipped and has not been published before.
