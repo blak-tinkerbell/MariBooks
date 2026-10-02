@@ -432,3 +432,44 @@ describe("fees on money in", () => {
     expect(d.cashByRail.ECOCASH).toBe("98.50");
   });
 });
+
+describe("proof of transaction (invoice/receipt attachment)", () => {
+  const withProof = {
+    id: "p1",
+    direction: "OUT" as const,
+    amount: "2100.00",
+    currency: "USD" as const,
+    rail: "BANK" as const,
+    category: "STOCK" as const,
+    date: "2026-09-12",
+  };
+
+  it("carries a valid proof through buildTransaction", () => {
+    const t = buildTransaction({
+      ...withProof,
+      proof: { key: "TENANT#abc/proof/x.pdf", kind: "INVOICE", contentType: "application/pdf", uploadedAt: "2026-09-12T09:00:00Z" },
+    });
+    expect(t.proof?.key).toBe("TENANT#abc/proof/x.pdf");
+    expect(t.proof?.kind).toBe("INVOICE");
+  });
+
+  it("rejects a proof with no stored key", () => {
+    expect(() =>
+      buildTransaction({ ...withProof, proof: { key: "", kind: "RECEIPT", contentType: "image/jpeg", uploadedAt: "2026-09-12T09:00:00Z" } }),
+    ).toThrow(ValidationError);
+  });
+
+  it("rejects an unknown proof kind", () => {
+    expect(() =>
+      // @ts-expect-error — intentionally invalid kind
+      buildTransaction({ ...withProof, proof: { key: "TENANT#abc/proof/x.jpg", kind: "PHOTO", contentType: "image/jpeg", uploadedAt: "2026-09-12T09:00:00Z" } }),
+    ).toThrow(ValidationError);
+  });
+
+  it("preserves proof across an edit", () => {
+    const t = buildTransaction({ ...withProof, proof: { key: "TENANT#abc/proof/x.pdf", kind: "INVOICE", contentType: "application/pdf", uploadedAt: "2026-09-12T09:00:00Z" } });
+    const edited = editTransaction(t, { note: "Istanbul order" });
+    expect(edited.proof?.key).toBe("TENANT#abc/proof/x.pdf");
+    expect(edited.note).toBe("Istanbul order");
+  });
+});

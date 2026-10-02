@@ -410,3 +410,9 @@ select.input { padding-right: 12px; cursor: pointer; }
   .card, .passport-doc, .statement-head { box-shadow: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .grid-statement, .grid-passport { display: block; }
 }
+
+/* Proof-of-transaction list on the statement */
+.proof-list { margin: 4px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
+.proof-list li { display: flex; }
+.proof-list .link-btn { display: inline-flex; align-items: center; gap: 8px; text-align: left; }
+.proof-list .link-btn svg { flex-shrink: 0; }

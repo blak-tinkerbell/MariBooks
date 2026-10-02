@@ -40,6 +40,14 @@ import {
   putTransaction,
 } from "./db.js";
 import { parseSms } from "./ai.js";
+import {
+  isAllowedContentType,
+  keyBelongsToTenant,
+  presignUpload,
+  presignView,
+  proofEnabled,
+} from "./s3.js";
+import { scanReceipt } from "./receipt.js";
 
 type Event = APIGatewayProxyEventV2WithJWTAuthorizer;
 
@@ -117,6 +125,45 @@ export const handler = async (
         if (!text) return json(400, { error: "Paste the SMS text" });
         if (text.length > 800) return json(400, { error: "That message is too long (800 characters max)" });
         return json(200, await parseSms(text));
+      }
+
+      case "POST /proof/upload-url": {
+        // Mint a presigned URL so the browser can upload one invoice/receipt straight to S3.
+        if (!proofEnabled()) return json(501, { error: "Proof uploads are not configured" });
+        const body = parseBody<{ contentType?: string }>(event);
+        const contentType = (body.contentType ?? "").trim();
+        if (!isAllowedContentType(contentType)) {
+          return json(400, { error: "Upload a JPG, PNG, WEBP, HEIC or PDF" });
+        }
+        return json(200, await presignUpload(tenantId, contentType));
+      }
+
+      case "POST /proof/scan": {
+        // Extract fields from an already-uploaded receipt/invoice with Amazon Textract.
+        if (!proofEnabled()) return json(501, { error: "Proof uploads are not configured" });
+        const body = parseBody<{ key?: string; kind?: "RECEIPT" | "INVOICE" }>(event);
+        const key = (body.key ?? "").trim();
+        const kind = body.kind === "INVOICE" ? "INVOICE" : "RECEIPT";
+        if (!key || !keyBelongsToTenant(tenantId, key)) {
+          return json(400, { error: "Unknown file" });
+        }
+        try {
+          return json(200, await scanReceipt(tenantId, key, kind));
+        } catch (e) {
+          console.warn("Textract scan failed", e);
+          // Scanning is best-effort; the owner can still fill the form by hand.
+          return json(200, { kind, confidence: "LOW", source: "TEXTRACT" });
+        }
+      }
+
+      case "GET /proof/view": {
+        // Return a short-lived URL for the owner to view their own proof file.
+        if (!proofEnabled()) return json(501, { error: "Proof uploads are not configured" });
+        const key = (event.queryStringParameters?.key ?? "").trim();
+        if (!key || !keyBelongsToTenant(tenantId, key)) {
+          return json(400, { error: "Unknown file" });
+        }
+        return json(200, { url: await presignView(key) });
       }
 
       case "GET /rates":

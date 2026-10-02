@@ -145,8 +145,24 @@ export function Statement({ data }: { data: AppData }) {
                 <Check ok={scoped.length > 0} text={`${scoped.length} entries in this period`} />
                 <Check ok={scoped.filter((t) => t.currency !== "USD").every((t) => !!t.effectiveRate)} text="Every ZiG/ZAR entry has a market rate" />
                 <Check ok={scoped.every((t) => !t.isAsset || !!t.assetClass)} text="Assets are classified" />
+                <Check ok={scoped.some((t) => t.proof)} text={`${scoped.filter((t) => t.proof).length} entries backed by an invoice or receipt`} />
               </ul>
             </div>
+            {scoped.some((t) => t.proof) && (
+              <div className="card stack-sm">
+                <h2>Proof of transactions</h2>
+                <p className="muted">Invoices and receipts attached to this period's records. A lender can open each one.</p>
+                <ul className="proof-list">
+                  {scoped.filter((t) => t.proof).slice(0, 8).map((t) => (
+                    <li key={t.id}>
+                      <button type="button" className="link-btn" onClick={() => openProof(data, t.proof!.key)}>
+                        <Icon name="message" size={16} /> {t.proof!.kind === "INVOICE" ? "Invoice" : "Receipt"} · {t.note || CAT_LABEL[t.category]}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </aside>
         </div>
       )}
@@ -156,6 +172,16 @@ export function Statement({ data }: { data: AppData }) {
 
 function Check({ ok, text }: { ok: boolean; text: string }) {
   return <li className={ok ? "ok" : "todo"}><Icon name={ok ? "check" : "alert"} size={18} stroke={2.2} />{text}</li>;
+}
+
+/** Resolve a short-lived URL for a proof file and open it in a new tab. */
+async function openProof(data: AppData, key: string) {
+  try {
+    const url = await data.store.proofViewUrl(key);
+    if (url) window.open(url, "_blank", "noopener");
+  } catch {
+    /* viewing proof is best-effort; a failure is non-fatal */
+  }
 }
 
 /**

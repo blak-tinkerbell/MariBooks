@@ -12,6 +12,7 @@ import type {
   Direction,
   EffectiveRate,
   ISODate,
+  Proof,
   Rail,
   Transaction,
 } from "./types.js";
@@ -32,6 +33,7 @@ export interface NewTransactionInput {
   isAsset?: boolean;
   assetClass?: AssetClass;
   assetDescription?: string;
+  proof?: Proof;
 }
 
 export class ValidationError extends Error {}
@@ -75,6 +77,14 @@ export function validateTransaction(input: NewTransactionInput): void {
       throw new ValidationError("Effective rate must be a positive number");
     }
   }
+  if (input.proof) {
+    if (!input.proof.key || typeof input.proof.key !== "string") {
+      throw new ValidationError("Proof must reference a stored file");
+    }
+    if (input.proof.kind !== "RECEIPT" && input.proof.kind !== "INVOICE") {
+      throw new ValidationError("Proof kind must be RECEIPT or INVOICE");
+    }
+  }
 }
 
 export class LockedTransactionError extends Error {}
@@ -110,6 +120,7 @@ export function editTransaction(
     isAsset: changes.isAsset ?? existing.isAsset,
     assetClass: changes.assetClass ?? existing.assetClass,
     assetDescription: changes.assetDescription ?? existing.assetDescription,
+    proof: changes.proof ?? existing.proof,
   };
   validateTransaction(merged);
   return {
@@ -169,6 +180,7 @@ export function buildTransaction(
     isAsset: input.isAsset,
     assetClass: input.isAsset ? input.assetClass : undefined,
     assetDescription: input.isAsset ? input.assetDescription : undefined,
+    proof: input.proof,
     createdAt: now,
     updatedAt: now,
   };

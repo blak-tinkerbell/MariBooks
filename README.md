@@ -26,6 +26,9 @@ hackathon. Category: `#commercial-potential` · Lane: `#startups`.
   shared only with explicit, revocable consent.
 - **Paste a payment SMS.** EcoCash / InnBucks / bank confirmations fill the form (rules parser
   in the browser; optional Amazon Bedrock refinement on the API).
+- **Snap an invoice or receipt.** Attach proof to any entry; Amazon Textract reads the total,
+  date and vendor to prefill the form, and the file is kept as evidence a lender can open.
+  Files upload straight to a private, encrypted S3 bucket via presigned URLs.
 - **Works on bad connections.** Failed saves queue on the device and sync later; the app shell
   loads offline.
 

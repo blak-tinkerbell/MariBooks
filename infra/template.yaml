@@ -32,6 +32,16 @@ Parameters:
     Type: String
     Default: ""
     Description: Region to call Bedrock in (empty = the stack region).
+  TextractRegion:
+    Type: String
+    Default: ""
+    Description: >
+      Region to call Amazon Textract (AnalyzeExpense) in. Textract is NOT available in every
+      region (notably not af-south-1), and AnalyzeExpense with an S3 object requires the bucket
+      and the Textract call to be in the SAME region. If this stack's region does not support
+      Textract, deploy the proof bucket in a Textract region (its own small stack) and set this
+      to that region. Empty = the stack region. Receipt scanning degrades gracefully if the
+      region does not support it (the file still attaches; the owner fills the form by hand).
 
 Conditions:
   HasBedrock: !Not [!Equals [!Ref BedrockModelId, ""]]
@@ -104,6 +114,41 @@ Resources:
         - AttributeName: SK
           KeyType: RANGE
 
+  # ---------- S3 proof store: uploaded invoices/receipts (private, KMS, CORS to app) ----------
+  # Files are uploaded by the browser via short-lived presigned URLs and never pass through
+  # Lambda. Private (no public access), SSE-KMS with the same CMK as the table, versioned, and
+  # CORS locked to the app origin so only the SPA can PUT/GET.
+  ProofBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub "${AppName}-${Stage}-proof-${AWS::AccountId}"
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: aws:kms
+              KMSMasterKeyID: !Ref DataKey
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+          - Id: expire-old-versions
+            Status: Enabled
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 365
+      CorsConfiguration:
+        CorsRules:
+          - AllowedOrigins: [!Ref CorsOrigin]
+            AllowedMethods: [GET, PUT]
+            AllowedHeaders: ["*"]
+            MaxAge: 3000
+
   # ---------- Cognito (M5): owner accounts + JWT ----------
   UserPool:
     Type: AWS::Cognito::UserPool
@@ -159,6 +204,8 @@ Resources:
         Variables:
           TABLE_NAME: !Ref Table
           CONFIG_PARAM_NAME: !Ref ConfigParameter
+          PROOF_BUCKET: !Ref ProofBucket
+          TEXTRACT_REGION: !Ref TextractRegion
           BEDROCK_MODEL_ID: !Ref BedrockModelId
           BEDROCK_REGION: !Ref BedrockRegion
           NODE_OPTIONS: "--enable-source-maps"
@@ -184,6 +231,17 @@ Resources:
               Action:
                 - ssm:GetParameter
               Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${AppName}/${Stage}/cors-origin"
+            - Sid: ProofStoreAccess
+              Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:PutObject
+              Resource: !Sub "${ProofBucket.Arn}/*"
+            - Sid: ReceiptTextract
+              Effect: Allow
+              Action:
+                - textract:AnalyzeExpense
+              Resource: "*"
             - !If
               - HasBedrock
               - Sid: BedrockParseSms
@@ -219,6 +277,24 @@ Resources:
             ApiId: !Ref HttpApi
             Path: /parse
             Method: POST
+        ProofUploadUrl:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /proof/upload-url
+            Method: POST
+        ProofScan:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /proof/scan
+            Method: POST
+        ProofView:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /proof/view
+            Method: GET
         GetRates:
           Type: HttpApi
           Properties:
@@ -308,5 +384,8 @@ Outputs:
     Value: !Ref UserPoolClient
   TableName:
     Value: !Ref Table
+  ProofBucketName:
+    Description: S3 bucket holding uploaded invoices/receipts (private)
+    Value: !Ref ProofBucket
   Region:
     Value: !Ref AWS::Region

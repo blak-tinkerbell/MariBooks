@@ -81,6 +81,19 @@ optionally be refined by Amazon Bedrock on the server, then re-validated.
 The demo already contains store renovations (Property) and mannequins/shelving (Furniture) — you
 can see them on the **Credit passport** screen as the declared asset base.
 
+## 30 seconds: attach proof (invoice/receipt + Textract)
+
+> This runs for real in a **signed-in account**; the demo shows the result without uploading.
+
+- On **Record money**, use **Attach an invoice or receipt** → upload a photo or PDF. The file
+  goes straight to private, encrypted S3 (never through the server), and **Amazon Textract**
+  reads the total, date and vendor to prefill the form. You confirm before saving.
+- In the **demo**, several entries already carry a sample invoice/receipt — open **Statement →
+  Proof of transactions** and click one to view it.
+
+> **What to notice:** a passport entry backed by a receipt is verifiable, not just claimed —
+> which is exactly what makes a lender trust the record.
+
 ## 1 minute: lender-ready statement
 
 Go to **Statement**.

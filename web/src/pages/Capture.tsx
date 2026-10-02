@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import {
   ASSET_CLASSES,
   CURRENCIES,
@@ -87,6 +87,9 @@ export function Capture({ data }: { data: AppData }) {
   const [sms, setSms] = useState("");
   const [smsResult, setSmsResult] = useState<SmsDraft | null>(null);
   const [smsBusy, setSmsBusy] = useState(false);
+  const [proof, setProof] = useState<{ key: string; name: string; kind: "RECEIPT" | "INVOICE" } | null>(null);
+  const [proofBusy, setProofBusy] = useState(false);
+  const [proofMsg, setProofMsg] = useState<{ tone: "ok" | "warn" | "error"; text: string } | null>(null);
 
   const set = (patch: Partial<Form>) => {
     setF((prev) => ({ ...prev, ...patch }));
@@ -158,6 +161,7 @@ export function Capture({ data }: { data: AppData }) {
         isAsset: f.direction === "OUT" ? f.isAsset : undefined,
         assetClass: f.direction === "OUT" && f.isAsset && f.assetClass ? f.assetClass : undefined,
         assetDescription: f.isAsset ? f.note.trim() : undefined,
+        proof: proof ? { key: proof.key, kind: proof.kind, contentType: "", fileName: proof.name, uploadedAt: new Date().toISOString() } : undefined,
       });
       const result = await data.store.put(txn);
       const line = `${f.direction === "IN" ? "+" : "−"}${fmt(txn.amount, txn.currency)} · ${RAIL_LABEL[txn.rail]} · ${f.isAsset ? "Asset" : CAT_LABEL[txn.category]}`;
@@ -172,6 +176,8 @@ export function Capture({ data }: { data: AppData }) {
       setSubmitted(false);
       setSms("");
       setSmsResult(null);
+      setProof(null);
+      setProofMsg(null);
       data.reload();
     } catch (err) {
       if (err instanceof UnauthorizedError) return data.onAuthLost();
@@ -206,6 +212,52 @@ export function Capture({ data }: { data: AppData }) {
       setTouched({ amount: true });
     } finally {
       setSmsBusy(false);
+    }
+  }
+
+  async function onProofPicked(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-picking the same file
+    if (!file) return;
+    const MAX = 10 * 1024 * 1024;
+    if (file.size > MAX) {
+      setProofMsg({ tone: "error", text: "That file is over 10 MB. Try a smaller photo or PDF." });
+      return;
+    }
+    const kind: "RECEIPT" | "INVOICE" = file.type === "application/pdf" ? "INVOICE" : "RECEIPT";
+    setProofBusy(true);
+    setProofMsg(null);
+    try {
+      const key = await data.store.uploadProof(file);
+      if (!key) {
+        setProofMsg({ tone: "warn", text: "Receipt uploads work in a signed-in account, not the demo." });
+        return;
+      }
+      setProof({ key, name: file.name, kind });
+      setProofMsg({ tone: "ok", text: `Attached ${file.name}. Reading it…` });
+      // Ask Textract to read it, then prefill what it found (owner still confirms).
+      const draft = await data.store.scanReceipt(key, kind).catch(() => null);
+      if (draft && (draft.amount || draft.date || draft.vendor)) {
+        const currency = draft.currency ?? f.currency;
+        set({
+          direction: "OUT", // a receipt/invoice is almost always money out
+          category: f.direction === "OUT" ? f.category : "STOCK",
+          amount: draft.amount ?? f.amount,
+          currency,
+          street: currency !== BASE ? f.street || suggestStreet(currency) : "",
+          date: draft.date && draft.date <= today ? draft.date : f.date,
+          note: (f.note || draft.vendor || "").slice(0, NOTE_MAX),
+        });
+        setTouched({ amount: true });
+        const conf = draft.confidence === "HIGH" ? "Read the total and date." : draft.confidence === "MEDIUM" ? "Read most of it — check the amount and date." : "Attached, but couldn't read it clearly. Fill the form by hand.";
+        setProofMsg({ tone: draft.confidence === "LOW" ? "warn" : "ok", text: `${conf} (Amazon Textract)` });
+      } else {
+        setProofMsg({ tone: "ok", text: `Attached ${file.name}.` });
+      }
+    } catch (err) {
+      setProofMsg({ tone: "error", text: `Couldn't attach that: ${(err as Error).message}` });
+    } finally {
+      setProofBusy(false);
     }
   }
 
@@ -353,6 +405,33 @@ export function Capture({ data }: { data: AppData }) {
               <p className={`sms-result ${smsResult.confidence.toLowerCase()}`} role="status">
                 {smsResult.confidence === "HIGH" ? "Read the amount, currency and direction." : smsResult.confidence === "MEDIUM" ? "Read most of it. Check the highlighted fields." : "Couldn't read this one. Please fill the form by hand."}
                 {smsResult.source === "AI" && <span className="pill">AI-assisted · Amazon Bedrock</span>}
+              </p>
+            )}
+          </div>
+
+          <div className="card sms-card">
+            <div className="card-head"><h2><Icon name="message" /> Attach an invoice or receipt</h2></div>
+            <p className="muted">Snap or upload the invoice/receipt for this entry. We'll read the total and date for you, and keep the file as proof for a lender. JPG, PNG or PDF, up to 10 MB.</p>
+            {data.store.proofSupported() ? (
+              <>
+                <label className="btn secondary block" aria-disabled={proofBusy} style={{ cursor: proofBusy ? "default" : "pointer" }}>
+                  <Icon name="sparkle" />{proofBusy ? "Uploading…" : proof ? "Replace file" : "Upload a receipt"}
+                  <input type="file" accept="image/*,application/pdf" hidden disabled={proofBusy} onChange={onProofPicked} />
+                </label>
+                {proof && (
+                  <p className="muted" style={{ marginTop: 8 }}>
+                    <span className="pill asset">{proof.kind === "INVOICE" ? "Invoice" : "Receipt"}</span> {proof.name}
+                    <button type="button" className="link-btn" style={{ marginLeft: 8 }} onClick={() => { setProof(null); setProofMsg(null); }}>Remove</button>
+                  </p>
+                )}
+              </>
+            ) : (
+              <p className="muted"><em>Receipt uploads need a signed-in account. In the demo, some entries already have a sample receipt attached — open the Statement to see one.</em></p>
+            )}
+            {proofMsg && (
+              <p className={`sms-result ${proofMsg.tone === "ok" ? "high" : proofMsg.tone === "warn" ? "medium" : "low"}`} role="status">
+                {proofMsg.text}
+                {proofMsg.text.includes("Textract") && <span className="pill">AI-assisted · Amazon Textract</span>}
               </p>
             )}
           </div>

@@ -5,6 +5,7 @@
 import type {
   BusinessProfile,
   OfficialRate,
+  ReceiptDraft,
   ShareLink,
   SmsDraft,
   Transaction,
@@ -92,4 +93,16 @@ export const api = {
   }) => request<ShareLink>("PUT", `/shares/${link.id}`, link),
   revokeShare: (id: string) => request<ShareLink>("DELETE", `/shares/${id}`),
   parseSms: (text: string) => request<SmsDraft>("POST", "/parse", { text }),
+  proofUploadUrl: (contentType: string) =>
+    request<{ uploadUrl: string; key: string; expiresIn: number }>("POST", "/proof/upload-url", { contentType }),
+  scanReceipt: (key: string, kind: "RECEIPT" | "INVOICE") =>
+    request<ReceiptDraft>("POST", "/proof/scan", { key, kind }),
+  proofViewUrl: (key: string) =>
+    request<{ url: string }>("GET", `/proof/view?key=${encodeURIComponent(key)}`),
 };
+
+/** Upload a file to S3 using a presigned PUT URL. The file never passes through our API. */
+export async function uploadToPresignedUrl(url: string, file: File): Promise<void> {
+  const res = await fetch(url, { method: "PUT", headers: { "content-type": file.type }, body: file });
+  if (!res.ok) throw new Error(`Upload failed (${res.status})`);
+}
