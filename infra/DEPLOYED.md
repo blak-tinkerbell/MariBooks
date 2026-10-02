@@ -14,7 +14,7 @@ Account: `985923204885` · Profile: `MariBooks` · Primary region: `af-south-1`
 - CloudFront `DistributionConfig.WebACLId` is set to the WAF WebACL ARN.
 - SSM `/maribooks/prod/cors-origin` resolves to the app origin.
 - CloudTrail `maribooks-prod-trail` `IsLogging` = **true**.
-- Test suite: **32 pass** (30 shared domain + 2 API integration). All workspaces build clean.
+- Test suite: **44 pass** (40 shared domain + 4 API integration). All workspaces build clean.
 
 ## Core stack — `maribooks-prod` (af-south-1)
 

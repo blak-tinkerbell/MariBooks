@@ -14,11 +14,18 @@
 
 ## The problem (the story)
 
-‹PERSONALISE: replace this paragraph with one real owner you know — name, town, what they sell. Get their permission. Keep it this short.›
+Meet Tryphine. She runs **TS Haute Couture**, a boutique selling clothing and accessories from
+**two branches** in Harare. She buys stock in US dollars on sourcing trips to **China and
+Turkey** — paying by bank transfer that carries 2% IMTT, plus flights, hotels and transport on
+each trip. In the shop she is paid in USD cash, by card, on EcoCash and InnBucks, and sometimes
+in rand by a cross-border customer. Some of her best clients buy on account through the month and
+**settle at month-end**. She renovates the stores and buys display mannequins. At the end of the
+month she has a notebook full of numbers in three currencies at different rates, and she still
+cannot answer one question: **am I making money?**
 
-Picture a tuck-shop owner in Harare. In one day she is paid in US dollars in cash, in ZiG on EcoCash, and in rand by a cross-border customer. She buys stock with a bank transfer that costs 2% IMTT and pays rent from her mobile wallet. At the end of the month she has a notebook full of numbers in three currencies at different rates, and she still cannot answer one question: **am I making money?**
-
-Because her records are scattered, a lender cannot see a trading history, so she cannot borrow to buy the fridge that would grow the business.
+Because her records are scattered across currencies, wallets and two tills, a lender cannot see a
+trading history — so she cannot borrow to open the third branch, even though the business is
+clearly growing.
 
 MariBooks answers that question in one screen and turns the same records into a **credit passport** she can share with a lender and take back when she chooses.
 
@@ -56,13 +63,13 @@ MariBooks answers that question in one screen and turns the same records into a 
 
 ![Architecture](./architecture.png)
 
-**Tests:** 37 domain unit tests (money, FX, ledger, reporting, passport, assets, SMS parser, fees on money in) + 4 API integration tests (idempotent retries, recoverable failed saves, SMS parse route).
+**Tests:** 40 domain unit tests (money, FX, ledger, reporting, passport, assets, SMS parser, fees on money in) + 4 API integration tests (idempotent retries, recoverable failed saves, SMS parse route) — 44 in total, all passing.
 
 ## Community & market impact
 
-- **Who it's for:** micro and small businesses in Zimbabwe — tuck shops, market traders, salons, hardware, cross-border traders — who deal in USD, ZiG and ZAR at once.
-- **Why it matters:** ‹ADD 1–2 SOURCED FIGURES — e.g. the size of Zimbabwe's MSME sector and its access-to-credit gap. Good sources: FinScope MSME Survey Zimbabwe, the Reserve Bank of Zimbabwe's financial inclusion strategy, World Bank Enterprise Surveys. Cite the source and year next to each number.›
-- **Early users:** ‹ADD what happened when real owners used it — how many, how many entries, one direct quote with permission. Even three people for two days is evidence.›
+- **Who it's for:** micro and small businesses in Zimbabwe — boutiques, tuck shops, market traders, salons, hardware, cross-border traders — who deal in USD, ZiG and ZAR at once.
+- **Why it matters:** the [FinScope MSME Survey Zimbabwe 2022](https://finmark.org.za/Publications/FinScope_MSME_Survey_Zimbabwe2022_Pocket_Guide.pdf) counted roughly **1.6 million** business owners employing about **1.7 million** people ([UN/ZimStat summary of the 2022 findings](https://sdgs.un.org/sites/default/files/2024-11/Session%208%20C%20Mukosera%20MSMEs%20Presentation%20UN..pdf)), and MSMEs contribute **over 50% of GDP** ([AFI, 2022](https://issuu.com/afi-global/docs/increasing_women_s_financial_inclus_805f4fac673d9b/6)). Yet lending barely reaches them: **MSME loans are only about 5.54% of total bank loans** ([AFI, 2022](https://issuu.com/afi-global/docs/increasing_women_s_financial_inclus_805f4fac673d9b/6)). The missing piece between a growing business and a loan is a trustworthy trading record — exactly what MariBooks produces. *(Figures summarised from the cited sources; content rephrased for licensing compliance.)*
+- **Early users:** ‹ADD what happened when real owners used it — how many people, how many entries, one direct quote with permission. Even three people over two days is evidence. If you have none yet, delete this line rather than invent numbers.›
 - **What changes for an owner:** they can see profit at the rate they actually got, see how much fees and IMTT cost them, and hand a lender a statement and passport instead of a notebook.
 
 ## Where it's headed (Startups lane)
@@ -79,7 +86,7 @@ Concrete moments:
 - **Infrastructure:** provisioned four CloudFormation/SAM stacks (core API, hosting, WAF in us-east-1, audit) and verified them live — JWT enforcement (401), CORS locked to the app origin, WAF attached, CloudTrail logging ([DEPLOYED.md](../infra/DEPLOYED.md)).
 - **Redesign from screenshots:** turned a cramped phone-width prototype into a full web app — first as a clickable design, then implemented in React — with a sidebar on desktop, a bottom bar on phones, the dashboard as the landing page, and field-level validation everywhere.
 - **Bugs caught by testing, not by users:** an end-to-end browser test showed that a fee on money *received* didn't reduce profit; the agent fixed the shared reporting engine and added a regression test. It also found the API build had been failing on a missing type package, and that the demo data skipped rent when the 1st fell on a Sunday.
-- **Judge-friendly by design:** the agent added the no-sign-up demo so anyone reaching the URL sees a working business immediately.
+- **Judge-friendly by design:** the agent added the no-sign-up demo so anyone reaching the URL sees a working business immediately, then rebuilt that demo as a real boutique (TS Haute Couture — two branches, imports from China and Turkey, month-end account clients, renovation and mannequin assets) and verified the generated six months of data against the live reporting engine before deploying.
 - ‹PERSONALISE: add one moment in your own words — something the agent did that surprised you or saved you a day.›
 
 ## Try it (60 seconds)
@@ -90,7 +97,7 @@ Concrete moments:
 
 1. Open **https://d3vn6ch6zctfj4.cloudfront.net/?demo**.
 2. **Dashboard:** switch USD → ZiG → ZAR and Market rate → Official. Every figure recalculates and says which basis it uses.
-3. **Record money:** paste `You paid ZWG 1,240.00 to Musa Wholesale on 28/09/2026. Charge: ZWG 12.40 IMTT: ZWG 24.80 Ref 7HX2K9` into "Paste a payment SMS" → **Fill the form**. Try an amount like `12.345` or a fee of `150` to see validation.
+3. **Record money:** paste `You paid USD 2,100.00 to Istanbul Textiles on 12/09/2026. Charge: USD 10.00 IMTT: USD 42.00 Ref TR8842` into "Paste a payment SMS" → **Fill the form** (a boutique stock import). Try an amount like `12.345` or a fee of `150` to see validation.
 4. **Statement:** pick a period → **Download PDF**.
 5. **Credit passport:** share with a lender (consent required), then revoke it.
 
@@ -103,8 +110,8 @@ Concrete moments:
 | ![Sign in with demo](./screenshots/07-sign-in-with-demo.png) | ![Phone](./screenshots/08-phone-dashboard.png) |
 
 ## Team & eligibility
-- **Builder:** ‹CONFIRM name + Builder Center profile›
-- **18 or older, eligible country, not an excluded employee:** ‹CONFIRM against the Rules tab›
-- **Original, not previously published:** ‹CONFIRM›
+- **Builder:** ‹YOUR NAME + link to your Builder Center profile›
+- **18 or older, eligible country, not an excluded employee:** ‹state "Confirmed" once checked against the Rules tab›
+- **Original, not previously published:** ‹state "Confirmed"›
 
 *Product concept: `MariBooks_Product_Concept.docx` (Ushauri Consulting).*

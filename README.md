@@ -66,7 +66,6 @@ aws cloudfront create-invalidation --distribution-id <DistId> --paths "/*"
 ```
 
 ## Status
-Specs complete; scaffolding in place. Application code and deployment follow (pending AWS
-access). Requires Node.js 18+.
-# MariBooks
-# MariBooks
+Live on AWS (af-south-1) and open to judging. Four CloudFormation/SAM stacks deployed and
+verified — see [`infra/DEPLOYED.md`](infra/DEPLOYED.md). 44 tests passing (40 domain + 4 API);
+all workspaces build clean. Requires Node.js 18+.
