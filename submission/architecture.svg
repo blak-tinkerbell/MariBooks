@@ -45,7 +45,7 @@
   <text x="680" y="358" font-size="13.5" fill="#DCEFEA">decimal-safe money, dual-basis FX,</text>
   <text x="680" y="378" font-size="13.5" fill="#DCEFEA">fees/IMTT, assets, passport,</text>
   <text x="680" y="398" font-size="13.5" fill="#DCEFEA">consent + share locks</text>
-  <text x="680" y="416" font-size="13.5" fill="#F2C46D">POST /parse · /proof/* (presign, scan)</text>
+  <text x="680" y="416" font-size="13.5" fill="#F2C46D">POST /parse · /proof/* (presign)</text>
 
   <!-- data -->
   <rect x="970" y="128" width="190" height="78" rx="14" fill="#fff" stroke="#DCE5E1" stroke-width="2"/>
@@ -62,9 +62,9 @@
   <text x="990" y="314" font-size="16" font-weight="700" fill="#10231F">KMS + SSM</text>
   <text x="990" y="336" font-size="12.5" fill="#52665F">CMK, runtime config</text>
 
-  <rect x="970" y="356" width="190" height="54" rx="14" fill="#FBEFD6" stroke="#F0D9A8" stroke-width="2"/>
-  <text x="990" y="380" font-size="15.5" font-weight="700" fill="#10231F">Amazon Textract</text>
-  <text x="990" y="400" font-size="12.5" fill="#7A4E00">reads invoices &amp; receipts</text>
+  <rect x="970" y="356" width="190" height="54" rx="14" fill="#EEF1EF" stroke="#CBD5D0" stroke-width="2" stroke-dasharray="5 4"/>
+  <text x="990" y="380" font-size="15.5" font-weight="700" fill="#5A6B64">Amazon Textract</text>
+  <text x="990" y="400" font-size="12.5" fill="#7A8C84">Phase 2 — not in af-south-1</text>
 
   <rect x="970" y="418" width="190" height="54" rx="14" fill="#FBEFD6" stroke="#F0D9A8" stroke-width="2"/>
   <text x="990" y="442" font-size="15.5" font-weight="700" fill="#10231F">Amazon Bedrock</text>
@@ -83,13 +83,16 @@
     <path d="M910 320 Q940 200 966 167"/>
     <path d="M910 350 Q940 250 966 247"/>
     <path d="M910 360 Q940 320 966 318"/>
-    <path d="M910 390 Q940 383 966 383"/>
     <path d="M910 410 Q940 440 966 445"/>
     <path d="M590 420 Q630 250 656 215"/>
   </g>
   <!-- browser uploads proof straight to S3 via a presigned URL (bypasses Lambda) -->
   <g stroke="#B8862B" stroke-width="2" fill="none" marker-end="url(#a)" stroke-dasharray="6 4">
     <path d="M270 250 Q620 250 620 250 T1065 214"/>
+  </g>
+  <!-- Phase 2: Lambda → Textract (held back; not in af-south-1) -->
+  <g stroke="#AEB9B4" stroke-width="2" fill="none" marker-end="url(#a)" stroke-dasharray="5 4">
+    <path d="M910 390 Q940 383 966 383"/>
   </g>
   <text x="600" y="104" font-size="12.5" fill="#52665F">API calls: HTTPS + JWT</text>
   <text x="690" y="243" font-size="12.5" fill="#B8862B">receipt upload → S3 (presigned, direct)</text>
