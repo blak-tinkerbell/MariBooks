@@ -68,7 +68,7 @@ export function Passport({ data }: { data: AppData }) {
   const profitTone = isNeg(p.netProfit) ? "warn" : "good";
   const profitNote = isNeg(p.netProfit)
     ? "Spent more than earned over the period"
-    : "Money-in less operating costs (assets excluded)";
+    : "Money-in less operating costs (capital expenditure excluded)";
 
   const assetClassList = assetsByClass.map(([k]) => ASSET_LABEL[k as keyof typeof ASSET_LABEL].split(" (")[0]).join(", ");
   const assetSpan = p.assetsAcquiredFrom && p.assetsAcquiredTo
@@ -138,13 +138,13 @@ export function Passport({ data }: { data: AppData }) {
         <div className="grid-2">
           <Metric label="Avg monthly turnover" value={fmt(p.avgMonthlyTurnover, cur)} note={avgNote} />
           <Metric label="Net profit" value={fmt(p.netProfit, cur)} note={profitNote} tone={profitTone} />
-          <Metric label="Money out (operating)" value={fmt(p.totalMoneyOut, cur)} note="Operating costs, fees & IMTT — assets excluded" />
+          <Metric label="Money out (operating)" value={fmt(p.totalMoneyOut, cur)} note="Operating costs, fees & IMTT — capital expenditure excluded" />
           <Metric label="Cash-flow stability" value={stab.label} note={stab.note} tone={p.cashFlowStability === "STRONG" ? "good" : "warn"} />
           <Metric label="Record span" value={`${p.recordSpanDays} days`} note={spanNote} tone={p.recordSpanDays >= 90 ? "good" : "warn"} />
-          <Metric label="Declared assets" value={fmt(p.declaredAssetBase.total, cur)} note={assetSpan ?? "None declared yet"} />
+          <Metric label="Capital expenditure (APEX)" value={fmt(p.declaredAssetBase.total, cur)} note={assetSpan ?? "None declared yet"} />
         </div>
       </section>
-      <p className="fine">Turnover is the total of money-in you recorded; net profit is turnover less operating costs, fees and IMTT. Record span is the time from your first to your latest entry, not a guarantee of unbroken records. Assets are your declared purchase cost, not a valuation.</p>
+      <p className="fine">Turnover is the total of money-in you recorded; net profit is turnover less operating costs, fees and IMTT. Record span is the time from your first to your latest entry, not a guarantee of unbroken records. Capital expenditure (APEX) is your declared purchase cost, not a valuation.</p>
 
       <section className="grid-passport no-print">
         <div className="card flush">

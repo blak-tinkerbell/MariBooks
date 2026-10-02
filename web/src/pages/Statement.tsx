@@ -46,7 +46,7 @@ export function Statement({ data }: { data: AppData }) {
 
   return (
     <>
-      <PageHeader title="Statement" sub="A lender-ready income statement built from your records.">
+      <PageHeader title="Statement" sub="A lender-ready statement of comprehensive income built from your records.">
         <ViewControls {...view} />
       </PageHeader>
 
@@ -76,7 +76,7 @@ export function Statement({ data }: { data: AppData }) {
               <Chevrons id="stmtChev" height={52} opacity={0.2} />
               <div className="statement-head-inner">
                 <div>
-                  <div className="eyebrow gold">Income statement</div>
+                  <div className="eyebrow gold">Statement of Comprehensive Income</div>
                   <div className="display statement-biz">{s.business.name || "My business"}</div>
                   <div className="dim">{longDate(range.from)} – {longDate(range.to)} · in {cur}</div>
                 </div>
@@ -111,11 +111,11 @@ export function Statement({ data }: { data: AppData }) {
                 <span className="display num">{nf(s.totals.netProfit)}</span>
               </div>
               <table className="table fin">
-                <caption>Below the line · not in profit</caption>
+                <caption>Capital expenditure (APEX) · below the line, not in profit</caption>
                 <tbody>
-                  {Object.keys(s.assetsAcquired).length === 0 && <tr><th scope="row" className="muted">No assets bought this period</th><td className="right num">{nf("0")}</td></tr>}
+                  {Object.keys(s.assetsAcquired).length === 0 && <tr><th scope="row" className="muted">No capital expenditure this period</th><td className="right num">{nf("0")}</td></tr>}
                   {Object.entries(s.assetsAcquired).map(([k, v]) => (
-                    <tr key={k}><th scope="row">Assets · {ASSET_LABEL[k as keyof typeof ASSET_LABEL]} ({v.count})</th><td className="right num">{nf(v.value)}</td></tr>
+                    <tr key={k}><th scope="row">APEX · {ASSET_LABEL[k as keyof typeof ASSET_LABEL]} ({v.count})</th><td className="right num">{nf(v.value)}</td></tr>
                   ))}
                 </tbody>
               </table>
@@ -144,7 +144,7 @@ export function Statement({ data }: { data: AppData }) {
               <ul className="checklist">
                 <Check ok={scoped.length > 0} text={`${scoped.length} entries in this period`} />
                 <Check ok={scoped.filter((t) => t.currency !== "USD").every((t) => !!t.effectiveRate)} text="Every ZiG/ZAR entry has a market rate" />
-                <Check ok={scoped.every((t) => !t.isAsset || !!t.assetClass)} text="Assets are classified" />
+                <Check ok={scoped.every((t) => !t.isAsset || !!t.assetClass)} text="Capital expenditure is classified" />
                 <Check ok={scoped.some((t) => t.proof)} text={`${scoped.filter((t) => t.proof).length} entries backed by an invoice or receipt`} />
               </ul>
             </div>

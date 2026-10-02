@@ -17,6 +17,7 @@ import { Chevrons, Icon } from "../icons.js";
 import {
   ASSET_LABEL,
   BASE,
+  CAPEX_SHORT,
   CAT_LABEL,
   IN_CATEGORIES,
   OUT_CATEGORIES,
@@ -124,8 +125,8 @@ export function Capture({ data }: { data: AppData }) {
   else if (f.date < addDays(today, -730)) errors.date = "That's more than 2 years ago. Check the date.";
 
   if (f.note.length > NOTE_MAX) errors.note = `Keep the note under ${NOTE_MAX} characters.`;
-  if (f.isAsset && !f.assetClass) errors.assetClass = "Choose what kind of asset this is.";
-  if (f.isAsset && !f.note.trim()) errors.note = "Describe the asset, e.g. \"display fridge\".";
+  if (f.isAsset && !f.assetClass) errors.assetClass = "Choose what kind of capital item this is.";
+  if (f.isAsset && !f.note.trim()) errors.note = "Describe the capital item, e.g. \"display mannequins\".";
 
   const show = (k: Field) => (submitted || touched[k] ? errors[k] : undefined);
   const invalid = Object.keys(errors).length > 0;
@@ -164,7 +165,7 @@ export function Capture({ data }: { data: AppData }) {
         proof: proof ? { key: proof.key, kind: proof.kind, contentType: "", fileName: proof.name, uploadedAt: new Date().toISOString() } : undefined,
       });
       const result = await data.store.put(txn);
-      const line = `${f.direction === "IN" ? "+" : "−"}${fmt(txn.amount, txn.currency)} · ${RAIL_LABEL[txn.rail]} · ${f.isAsset ? "Asset" : CAT_LABEL[txn.category]}`;
+      const line = `${f.direction === "IN" ? "+" : "−"}${fmt(txn.amount, txn.currency)} · ${RAIL_LABEL[txn.rail]} · ${f.isAsset ? CAPEX_SHORT : CAT_LABEL[txn.category]}`;
       setStatus(
         result === "QUEUED"
           ? { tone: "warn", text: `Saved on this device: ${line}. It will sync when you're back online.` }
@@ -360,13 +361,13 @@ export function Capture({ data }: { data: AppData }) {
               <label className="check-row">
                 <input type="checkbox" checked={f.isAsset} onChange={(e) => set({ isAsset: e.target.checked, category: e.target.checked ? "OTHER" : f.category })} />
                 <span>
-                  <strong>This is an asset</strong>
-                  <span className="help">Equipment, a fridge, a vehicle. It's kept out of profit and added to your credit passport.</span>
+                  <strong>This is capital expenditure (APEX)</strong>
+                  <span className="help">A store fit-out, equipment, a vehicle, display mannequins. It's kept out of profit and added to your credit passport as capital expenditure.</span>
                 </span>
               </label>
               {f.isAsset && (
                 <div className="field">
-                  <label htmlFor="assetClass">Kind of asset <span className="req" aria-hidden="true">*</span></label>
+                  <label htmlFor="assetClass">Kind of capital item <span className="req" aria-hidden="true">*</span></label>
                   <select id="assetClass" className={`input ${show("assetClass") ? "invalid" : ""}`} value={f.assetClass} onChange={(e) => set({ assetClass: e.target.value as AssetClass })} onBlur={blur("assetClass")} aria-invalid={!!show("assetClass")} aria-describedby="err-assetClass">
                     <option value="">Choose…</option>
                     {ASSET_CLASSES.map((a) => <option key={a} value={a}>{ASSET_LABEL[a]}</option>)}
@@ -379,10 +380,10 @@ export function Capture({ data }: { data: AppData }) {
 
           <div className="field">
             <div className="label-row">
-              <label htmlFor="note">{f.isAsset ? <>Describe the asset <span className="req" aria-hidden="true">*</span></> : <>Note <span className="opt">(optional)</span></>}</label>
+              <label htmlFor="note">{f.isAsset ? <>Describe the capital item <span className="req" aria-hidden="true">*</span></> : <>Note <span className="opt">(optional)</span></>}</label>
               <span className={`count num ${f.note.length > NOTE_MAX ? "over" : ""}`}>{f.note.length} / {NOTE_MAX}</span>
             </div>
-            <input id="note" className={`input ${show("note") ? "invalid" : ""}`} placeholder={f.isAsset ? "e.g. display fridge" : "e.g. bread stock, September rent"} value={f.note} onChange={(e) => set({ note: e.target.value })} onBlur={blur("note")} aria-invalid={!!show("note")} aria-describedby="err-note" />
+            <input id="note" className={`input ${show("note") ? "invalid" : ""}`} placeholder={f.isAsset ? "e.g. display mannequins" : "e.g. inventory restock, September rent"} value={f.note} onChange={(e) => set({ note: e.target.value })} onBlur={blur("note")} aria-invalid={!!show("note")} aria-describedby="err-note" />
             <FieldError id="err-note" msg={show("note")} />
           </div>
 
@@ -443,7 +444,7 @@ export function Capture({ data }: { data: AppData }) {
               <span className="display num preview-amt">{Number(validAmt) > 0 ? `${f.direction === "IN" ? "+" : "−"}${fmt(Number(validAmt).toFixed(2), f.currency)}` : fmt("0", f.currency)}</span>
               <dl>
                 <dt>Paid via</dt><dd>{RAIL_LABEL[f.rail]}</dd>
-                <dt>Category</dt><dd>{f.isAsset ? "Asset" : catLabel(f.category)}</dd>
+                <dt>Category</dt><dd>{f.isAsset ? CAPEX_SHORT : catLabel(f.category)}</dd>
                 <dt>Fee + IMTT</dt><dd className="num">{fee || imtt ? fmt((Number(fee ?? 0) + Number(imtt ?? 0)).toFixed(2), f.currency) : "None"}</dd>
                 {f.currency !== BASE && <><dt>In USD</dt><dd className="num">{inUsd ? fmt(inUsd, "USD") : "—"}</dd></>}
               </dl>

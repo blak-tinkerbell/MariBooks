@@ -66,7 +66,7 @@ export const RAIL_LABEL: Record<Rail, string> = {
 
 export const CAT_LABEL: Record<Category, string> = {
   SALES: "Sales",
-  STOCK: "Stock",
+  STOCK: "Inventory",
   RENT: "Rent",
   TRANSPORT: "Transport",
   WAGES: "Wages",
@@ -77,14 +77,20 @@ export const CAT_LABEL: Record<Category, string> = {
 export const IN_CATEGORIES: Category[] = ["SALES", "OTHER"];
 export const OUT_CATEGORIES: Category[] = ["STOCK", "RENT", "WAGES", "TRANSPORT", "FEES", "OTHER"];
 
+// "APEX — Capital Expenditure" is the owner-facing name for what the domain still models as an
+// asset purchase (enum values unchanged). These are the sub-classes of capital expenditure.
 export const ASSET_LABEL: Record<AssetClass, string> = {
   EQUIPMENT: "Equipment (fridge, machine)",
   VEHICLE: "Vehicle",
   TOOLS: "Tools",
   FURNITURE: "Furniture & fittings",
   PROPERTY: "Property",
-  OTHER: "Other asset",
+  OTHER: "Other capital item",
 };
+
+/** Owner-facing name for the asset / capital-expenditure concept. */
+export const CAPEX_LABEL = "APEX — Capital Expenditure";
+export const CAPEX_SHORT = "Capital expenditure";
 
 /**
  * The owner's most recent market rate per foreign currency, as "1 USD = x".

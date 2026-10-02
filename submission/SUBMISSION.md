@@ -39,8 +39,8 @@ MariBooks answers that question in one screen and turns the same records into a 
 | **Fees and IMTT as percentages** | Enter "2%" and MariBooks works out the charge and keeps it separate from the principal, so profit is honest. |
 | **The rate you actually got** | For ZiG and ZAR the owner enters the **market rate** they traded at. A separate **official** rate table drives statutory-style reports. Every figure shows which basis it uses. |
 | **"Are you making money?"** | Dashboard: profit for the period with the change on the previous one, money in, operating costs, asset spend, fees & IMTT, six-month profit trend, cash by payment method, recent activity. Switch the view between USD / ZiG / ZAR and market / official in one tap. |
-| **Assets kept out of profit** | Buying a fridge doesn't wreck a month's profit. It's tagged as an asset and builds the declared asset base. |
-| **Lender-ready statement** | Income statement for any period: money in, operating costs by category, net profit and margin, assets below the line, rate basis and currency mix disclosed. Download as PDF. |
+| **Capital expenditure (APEX) kept out of profit** | Buying a store fit-out or display mannequins doesn't wreck a month's profit. It's tagged as capital expenditure (APEX) and builds the declared capital base. |
+| **Lender-ready statement** | Statement of Comprehensive Income for any period: money in, operating costs by category, net profit and margin, capital expenditure below the line, rate basis and currency mix disclosed. Download as PDF. |
 | **Credit passport, with consent** | Average monthly turnover, cash-flow stability, continuous-record length, declared assets, and a 4-point readiness check. Shared only after explicit consent, revocable at any time. Entries in an active share are locked, so a lender always sees exactly what was sent. |
 | **Works on bad connections** | If a save fails because the connection dropped, the entry is kept on the device and synced when the connection returns — idempotent ids mean it is never duplicated. The app shell loads offline. |
 | **Every field validated** | Amounts (positive, 2 decimals), percentages (0–100, with a warning above 20%), rates, dates (not in the future), asset details, notes (80 chars), passwords matching the account policy — with plain-language messages next to the field. |
@@ -77,7 +77,7 @@ MariBooks answers that question in one screen and turns the same records into a 
 ## Where it's headed (Startups lane)
 
 - **Business model:** free for owners to record and see profit; lenders and microfinance institutions pay for verified, consented passports and statements; premium tax-ready reports for growing SMEs.
-- **Next:** a lender view reached through the share link, WhatsApp and USSD capture for feature phones, receipt photos, ZIMRA fiscal-invoice integration, and more languages (Shona and Ndebele).
+- **Next:** a full double-entry accounting phase — general ledger and chart of accounts, trial balance with a self-balancing suspense account, cashbook, bank reconciliation, and open/carry-forward accounting calendars, producing a Statement of Comprehensive Income and a Statement of Financial Position. Scoped in [`.kiro/specs/maribooks-accounting/`](../.kiro/specs/maribooks-accounting/README.md). Plus a lender view through the share link, WhatsApp and USSD capture for feature phones, ZIMRA fiscal-invoice integration, and more languages (Shona and Ndebele).
 - **Flywheel:** the more an owner records, the stronger their passport, the more reason to keep recording.
 
 ## How the coding agent helped me ship
