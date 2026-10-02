@@ -9,9 +9,9 @@ Built as a **serverless web app on AWS** for the [Zero to Shipped](https://build
 hackathon. Category: `#commercial-potential` · Lane: `#startups`.
 
 **Live:** https://d3vn6ch6zctfj4.cloudfront.net · **Try the demo, no sign-up:** https://d3vn6ch6zctfj4.cloudfront.net/?demo
-· **Submission write-up:** [`submission/SUBMISSION.md`](submission/SUBMISSION.md)
 
-![MariBooks dashboard](submission/screenshots/01-dashboard.png)
+
+
 
 ## What makes it different
 - **Honest multi-currency.** Amounts are stored in the currency they happened in and
@@ -39,7 +39,7 @@ maribooks/
 ├─ web/        # React + Vite SPA (capture, dashboard, statement, passport)
 ├─ api/        # AWS Lambda (Node.js 22) sync API over DynamoDB
 ├─ infra/      # AWS SAM template (API Gateway, Lambda, DynamoDB, S3, CloudFront, Cognito, ...)
-├─ submission/ # hackathon submission pack + checklist
+├─ submission/ # hackathon submission pack 
 └─ .kiro/specs/maribooks-mvp/   # requirements, design, infrastructure, tasks
 ```
 
