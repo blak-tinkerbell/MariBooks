@@ -12,3 +12,11 @@ $ aws sts get-caller-identity --profile MariBooks
     "Arn": "arn:aws:sts::985923204885:assumed-role/AWSReservedSSO_AWSAdministratorAccess_292b7e3f15db9d32/tari"
 }
 ```
+
+## Agent session screenshots
+
+Kiro verifying the identity, deploying and validating the CloudFormation stacks, syncing the SPA
+to S3, invalidating CloudFront and verifying the live app (200s on the app, 401 on an
+unauthenticated API call):
+
+![Kiro connected to AWS](./screenshots/10-kiro-aws-connection-proof.png)

@@ -26,9 +26,9 @@ hackathon. Category: `#commercial-potential` · Lane: `#startups`.
   shared only with explicit, revocable consent.
 - **Paste a payment SMS.** EcoCash / InnBucks / bank confirmations fill the form (rules parser
   in the browser; optional Amazon Bedrock refinement on the API).
-- **Snap an invoice or receipt.** Attach proof to any entry; Amazon Textract reads the total,
-  date and vendor to prefill the form, and the file is kept as evidence a lender can open.
-  Files upload straight to a private, encrypted S3 bucket via presigned URLs.
+- **Attach an invoice or receipt.** Attach proof to any entry; the file is kept as evidence a
+  lender can open. Files upload straight to a private, encrypted S3 bucket via presigned URLs.
+  Phase 2 adds Amazon Textract to read the total, date and vendor and prefill the form.
 - **Works on bad connections.** Failed saves queue on the device and sync later; the app shell
   loads offline.
 
@@ -37,7 +37,7 @@ hackathon. Category: `#commercial-potential` · Lane: `#startups`.
 maribooks/
 ├─ shared/     # framework-free TypeScript domain logic (money, FX, ledger, reporting, passport)
 ├─ web/        # React + Vite SPA (capture, dashboard, statement, passport)
-├─ api/        # AWS Lambda (Node.js 18) sync API over DynamoDB
+├─ api/        # AWS Lambda (Node.js 22) sync API over DynamoDB
 ├─ infra/      # AWS SAM template (API Gateway, Lambda, DynamoDB, S3, CloudFront, Cognito, ...)
 ├─ submission/ # hackathon submission pack + checklist
 └─ .kiro/specs/maribooks-mvp/   # requirements, design, infrastructure, tasks
@@ -70,5 +70,5 @@ aws cloudfront create-invalidation --distribution-id <DistId> --paths "/*"
 
 ## Status
 Live on AWS (af-south-1) and open to judging. Four CloudFormation/SAM stacks deployed and
-verified — see [`infra/DEPLOYED.md`](infra/DEPLOYED.md). 44 tests passing (40 domain + 4 API);
+verified — see [`infra/DEPLOYED.md`](infra/DEPLOYED.md). 48 tests passing (44 domain + 4 API);
 all workspaces build clean. Requires Node.js 18+.
