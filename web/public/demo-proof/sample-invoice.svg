@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="620" height="820" viewBox="0 0 620 820" font-family="Helvetica, Arial, sans-serif">
+  <rect width="620" height="820" fill="#ffffff"/>
+  <rect width="620" height="820" fill="none" stroke="#DCE5E1" stroke-width="2"/>
+  <rect x="0" y="0" width="620" height="90" fill="#0C3A35"/>
+  <text x="40" y="45" font-size="24" font-weight="700" fill="#ffffff">ISTANBUL TEXTILES LTD</text>
+  <text x="40" y="72" font-size="14" fill="#C3D9D3">Merter, Istanbul · Türkiye · export@istanbultextiles.example</text>
+  <text x="40" y="140" font-size="22" font-weight="700" fill="#10231F">COMMERCIAL INVOICE</text>
+  <text x="40" y="172" font-size="14" fill="#52665F">Invoice no: TR-8842</text>
+  <text x="40" y="194" font-size="14" fill="#52665F">Date: 12/09/2026</text>
+  <text x="40" y="216" font-size="14" fill="#52665F">Bill to: TS Haute Couture, Harare, Zimbabwe</text>
+  <line x1="40" y1="250" x2="580" y2="250" stroke="#DCE5E1" stroke-width="2"/>
+  <text x="40" y="282" font-size="14" font-weight="700" fill="#10231F">Description</text>
+  <text x="430" y="282" font-size="14" font-weight="700" fill="#10231F">Qty</text>
+  <text x="500" y="282" font-size="14" font-weight="700" fill="#10231F">Amount</text>
+  <text x="40" y="316" font-size="14" fill="#33483F">Occasion dresses (assorted)</text><text x="435" y="316" font-size="14" fill="#33483F">60</text><text x="500" y="316" font-size="14" fill="#33483F">US$ 1,140.00</text>
+  <text x="40" y="344" font-size="14" fill="#33483F">Leather handbags</text><text x="435" y="344" font-size="14" fill="#33483F">40</text><text x="500" y="344" font-size="14" fill="#33483F">US$ 620.00</text>
+  <text x="40" y="372" font-size="14" fill="#33483F">Scarf &amp; accessory sets</text><text x="435" y="372" font-size="14" fill="#33483F">80</text><text x="500" y="372" font-size="14" fill="#33483F">US$ 340.00</text>
+  <line x1="40" y1="400" x2="580" y2="400" stroke="#DCE5E1" stroke-width="2"/>
+  <text x="400" y="440" font-size="16" fill="#52665F">Subtotal</text><text x="500" y="440" font-size="16" fill="#33483F">US$ 2,100.00</text>
+  <text x="400" y="470" font-size="18" font-weight="700" fill="#10231F">TOTAL</text><text x="500" y="470" font-size="18" font-weight="700" fill="#0C3A35">US$ 2,100.00</text>
+  <rect x="40" y="720" width="540" height="60" rx="8" fill="#FBEFD6"/>
+  <text x="60" y="757" font-size="13" fill="#7A4E00">Sample document for the MariBooks demo — not a real invoice.</text>
+</svg>

@@ -10,7 +10,7 @@ export function readiness(txns: Transaction[], passport: Passport) {
   const items = [
     { label: `3+ months of records (${months} so far)`, ok: months >= 3 },
     { label: "Every ZiG/ZAR entry has a market rate", ok: foreign.every((t) => !!t.effectiveRate) },
-    { label: "Assets declared", ok: txns.some((t) => t.isAsset) },
+    { label: "Capital expenditure (APEX) declared", ok: txns.some((t) => t.isAsset) },
     { label: "Steady monthly turnover", ok: passport.cashFlowStability === "STRONG" },
   ];
   return { items, done: items.filter((i) => i.ok).length };

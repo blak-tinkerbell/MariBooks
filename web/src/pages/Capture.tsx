@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import {
   ASSET_CLASSES,
   CURRENCIES,
@@ -17,6 +17,7 @@ import { Chevrons, Icon } from "../icons.js";
 import {
   ASSET_LABEL,
   BASE,
+  CAPEX_SHORT,
   CAT_LABEL,
   IN_CATEGORIES,
   OUT_CATEGORIES,
@@ -87,6 +88,9 @@ export function Capture({ data }: { data: AppData }) {
   const [sms, setSms] = useState("");
   const [smsResult, setSmsResult] = useState<SmsDraft | null>(null);
   const [smsBusy, setSmsBusy] = useState(false);
+  const [proof, setProof] = useState<{ key: string; name: string; kind: "RECEIPT" | "INVOICE" } | null>(null);
+  const [proofBusy, setProofBusy] = useState(false);
+  const [proofMsg, setProofMsg] = useState<{ tone: "ok" | "warn" | "error"; text: string } | null>(null);
 
   const set = (patch: Partial<Form>) => {
     setF((prev) => ({ ...prev, ...patch }));
@@ -121,8 +125,8 @@ export function Capture({ data }: { data: AppData }) {
   else if (f.date < addDays(today, -730)) errors.date = "That's more than 2 years ago. Check the date.";
 
   if (f.note.length > NOTE_MAX) errors.note = `Keep the note under ${NOTE_MAX} characters.`;
-  if (f.isAsset && !f.assetClass) errors.assetClass = "Choose what kind of asset this is.";
-  if (f.isAsset && !f.note.trim()) errors.note = "Describe the asset, e.g. \"display fridge\".";
+  if (f.isAsset && !f.assetClass) errors.assetClass = "Choose what kind of capital item this is.";
+  if (f.isAsset && !f.note.trim()) errors.note = "Describe the capital item, e.g. \"display mannequins\".";
 
   const show = (k: Field) => (submitted || touched[k] ? errors[k] : undefined);
   const invalid = Object.keys(errors).length > 0;
@@ -158,9 +162,10 @@ export function Capture({ data }: { data: AppData }) {
         isAsset: f.direction === "OUT" ? f.isAsset : undefined,
         assetClass: f.direction === "OUT" && f.isAsset && f.assetClass ? f.assetClass : undefined,
         assetDescription: f.isAsset ? f.note.trim() : undefined,
+        proof: proof ? { key: proof.key, kind: proof.kind, contentType: "", fileName: proof.name, uploadedAt: new Date().toISOString() } : undefined,
       });
       const result = await data.store.put(txn);
-      const line = `${f.direction === "IN" ? "+" : "−"}${fmt(txn.amount, txn.currency)} · ${RAIL_LABEL[txn.rail]} · ${f.isAsset ? "Asset" : CAT_LABEL[txn.category]}`;
+      const line = `${f.direction === "IN" ? "+" : "−"}${fmt(txn.amount, txn.currency)} · ${RAIL_LABEL[txn.rail]} · ${f.isAsset ? CAPEX_SHORT : CAT_LABEL[txn.category]}`;
       setStatus(
         result === "QUEUED"
           ? { tone: "warn", text: `Saved on this device: ${line}. It will sync when you're back online.` }
@@ -172,6 +177,8 @@ export function Capture({ data }: { data: AppData }) {
       setSubmitted(false);
       setSms("");
       setSmsResult(null);
+      setProof(null);
+      setProofMsg(null);
       data.reload();
     } catch (err) {
       if (err instanceof UnauthorizedError) return data.onAuthLost();
@@ -206,6 +213,52 @@ export function Capture({ data }: { data: AppData }) {
       setTouched({ amount: true });
     } finally {
       setSmsBusy(false);
+    }
+  }
+
+  async function onProofPicked(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-picking the same file
+    if (!file) return;
+    const MAX = 10 * 1024 * 1024;
+    if (file.size > MAX) {
+      setProofMsg({ tone: "error", text: "That file is over 10 MB. Try a smaller photo or PDF." });
+      return;
+    }
+    const kind: "RECEIPT" | "INVOICE" = file.type === "application/pdf" ? "INVOICE" : "RECEIPT";
+    setProofBusy(true);
+    setProofMsg(null);
+    try {
+      const key = await data.store.uploadProof(file);
+      if (!key) {
+        setProofMsg({ tone: "warn", text: "Receipt uploads work in a signed-in account, not the demo." });
+        return;
+      }
+      setProof({ key, name: file.name, kind });
+      setProofMsg({ tone: "ok", text: `Attached ${file.name}. Reading it…` });
+      // Ask Textract to read it, then prefill what it found (owner still confirms).
+      const draft = await data.store.scanReceipt(key, kind).catch(() => null);
+      if (draft && (draft.amount || draft.date || draft.vendor)) {
+        const currency = draft.currency ?? f.currency;
+        set({
+          direction: "OUT", // a receipt/invoice is almost always money out
+          category: f.direction === "OUT" ? f.category : "STOCK",
+          amount: draft.amount ?? f.amount,
+          currency,
+          street: currency !== BASE ? f.street || suggestStreet(currency) : "",
+          date: draft.date && draft.date <= today ? draft.date : f.date,
+          note: (f.note || draft.vendor || "").slice(0, NOTE_MAX),
+        });
+        setTouched({ amount: true });
+        const conf = draft.confidence === "HIGH" ? "Read the total and date." : draft.confidence === "MEDIUM" ? "Read most of it — check the amount and date." : "Attached, but couldn't read it clearly. Fill the form by hand.";
+        setProofMsg({ tone: draft.confidence === "LOW" ? "warn" : "ok", text: `${conf} (Amazon Textract)` });
+      } else {
+        setProofMsg({ tone: "ok", text: `Attached ${file.name}.` });
+      }
+    } catch (err) {
+      setProofMsg({ tone: "error", text: `Couldn't attach that: ${(err as Error).message}` });
+    } finally {
+      setProofBusy(false);
     }
   }
 
@@ -308,13 +361,13 @@ export function Capture({ data }: { data: AppData }) {
               <label className="check-row">
                 <input type="checkbox" checked={f.isAsset} onChange={(e) => set({ isAsset: e.target.checked, category: e.target.checked ? "OTHER" : f.category })} />
                 <span>
-                  <strong>This is an asset</strong>
-                  <span className="help">Equipment, a fridge, a vehicle. It's kept out of profit and added to your credit passport.</span>
+                  <strong>This is capital expenditure (APEX)</strong>
+                  <span className="help">A store fit-out, equipment, a vehicle, display mannequins. It's kept out of profit and added to your credit passport as capital expenditure.</span>
                 </span>
               </label>
               {f.isAsset && (
                 <div className="field">
-                  <label htmlFor="assetClass">Kind of asset <span className="req" aria-hidden="true">*</span></label>
+                  <label htmlFor="assetClass">Kind of capital item <span className="req" aria-hidden="true">*</span></label>
                   <select id="assetClass" className={`input ${show("assetClass") ? "invalid" : ""}`} value={f.assetClass} onChange={(e) => set({ assetClass: e.target.value as AssetClass })} onBlur={blur("assetClass")} aria-invalid={!!show("assetClass")} aria-describedby="err-assetClass">
                     <option value="">Choose…</option>
                     {ASSET_CLASSES.map((a) => <option key={a} value={a}>{ASSET_LABEL[a]}</option>)}
@@ -327,10 +380,10 @@ export function Capture({ data }: { data: AppData }) {
 
           <div className="field">
             <div className="label-row">
-              <label htmlFor="note">{f.isAsset ? <>Describe the asset <span className="req" aria-hidden="true">*</span></> : <>Note <span className="opt">(optional)</span></>}</label>
+              <label htmlFor="note">{f.isAsset ? <>Describe the capital item <span className="req" aria-hidden="true">*</span></> : <>Note <span className="opt">(optional)</span></>}</label>
               <span className={`count num ${f.note.length > NOTE_MAX ? "over" : ""}`}>{f.note.length} / {NOTE_MAX}</span>
             </div>
-            <input id="note" className={`input ${show("note") ? "invalid" : ""}`} placeholder={f.isAsset ? "e.g. display fridge" : "e.g. bread stock, September rent"} value={f.note} onChange={(e) => set({ note: e.target.value })} onBlur={blur("note")} aria-invalid={!!show("note")} aria-describedby="err-note" />
+            <input id="note" className={`input ${show("note") ? "invalid" : ""}`} placeholder={f.isAsset ? "e.g. display mannequins" : "e.g. inventory restock, September rent"} value={f.note} onChange={(e) => set({ note: e.target.value })} onBlur={blur("note")} aria-invalid={!!show("note")} aria-describedby="err-note" />
             <FieldError id="err-note" msg={show("note")} />
           </div>
 
@@ -357,6 +410,33 @@ export function Capture({ data }: { data: AppData }) {
             )}
           </div>
 
+          <div className="card sms-card">
+            <div className="card-head"><h2><Icon name="message" /> Attach an invoice or receipt</h2></div>
+            <p className="muted">Snap or upload the invoice/receipt for this entry. We'll read the total and date for you, and keep the file as proof for a lender. JPG, PNG or PDF, up to 10 MB.</p>
+            {data.store.proofSupported() ? (
+              <>
+                <label className="btn secondary block" aria-disabled={proofBusy} style={{ cursor: proofBusy ? "default" : "pointer" }}>
+                  <Icon name="sparkle" />{proofBusy ? "Uploading…" : proof ? "Replace file" : "Upload a receipt"}
+                  <input type="file" accept="image/*,application/pdf" hidden disabled={proofBusy} onChange={onProofPicked} />
+                </label>
+                {proof && (
+                  <p className="muted" style={{ marginTop: 8 }}>
+                    <span className="pill asset">{proof.kind === "INVOICE" ? "Invoice" : "Receipt"}</span> {proof.name}
+                    <button type="button" className="link-btn" style={{ marginLeft: 8 }} onClick={() => { setProof(null); setProofMsg(null); }}>Remove</button>
+                  </p>
+                )}
+              </>
+            ) : (
+              <p className="muted"><em>Receipt uploads need a signed-in account. In the demo, some entries already have a sample receipt attached — open the Statement to see one.</em></p>
+            )}
+            {proofMsg && (
+              <p className={`sms-result ${proofMsg.tone === "ok" ? "high" : proofMsg.tone === "warn" ? "medium" : "low"}`} role="status">
+                {proofMsg.text}
+                {proofMsg.text.includes("Textract") && <span className="pill">AI-assisted · Amazon Textract</span>}
+              </p>
+            )}
+          </div>
+
           <div className="preview">
             <Chevrons id="prevChev" height={56} opacity={0.2} />
             <div className="preview-inner">
@@ -364,7 +444,7 @@ export function Capture({ data }: { data: AppData }) {
               <span className="display num preview-amt">{Number(validAmt) > 0 ? `${f.direction === "IN" ? "+" : "−"}${fmt(Number(validAmt).toFixed(2), f.currency)}` : fmt("0", f.currency)}</span>
               <dl>
                 <dt>Paid via</dt><dd>{RAIL_LABEL[f.rail]}</dd>
-                <dt>Category</dt><dd>{f.isAsset ? "Asset" : catLabel(f.category)}</dd>
+                <dt>Category</dt><dd>{f.isAsset ? CAPEX_SHORT : catLabel(f.category)}</dd>
                 <dt>Fee + IMTT</dt><dd className="num">{fee || imtt ? fmt((Number(fee ?? 0) + Number(imtt ?? 0)).toFixed(2), f.currency) : "None"}</dd>
                 {f.currency !== BASE && <><dt>In USD</dt><dd className="num">{inUsd ? fmt(inUsd, "USD") : "—"}</dd></>}
               </dl>

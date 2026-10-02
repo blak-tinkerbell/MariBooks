@@ -139,8 +139,8 @@ export function Dashboard({ data }: { data: AppData }) {
 
       <section className="grid-4" aria-label="Period in numbers">
         <Kpi dot="in" label="Money in" value={nf(d.moneyIn)} note={`${model.moneyInCount} sales & receipts`} />
-        <Kpi dot="out" label="Operating costs" value={nf(d.operatingOut)} note="Stock, rent, wages, fees" />
-        <Kpi dot="asset" label="Asset spend" value={nf(d.assetSpend)} note="Kept out of profit" />
+        <Kpi dot="out" label="Operating costs" value={nf(d.operatingOut)} note="Inventory, rent, wages, fees" />
+        <Kpi dot="asset" label="Capital expenditure" value={nf(d.assetSpend)} note="APEX · kept out of profit" />
         <Kpi dot="fee" label="Fees & IMTT" value={nf(model.charges)} note={Number(d.moneyIn) > 0 ? `${((Number(model.charges) / Number(d.moneyIn)) * 100).toFixed(1)}% of money in` : "Charged by rails"} />
       </section>
 
@@ -214,7 +214,7 @@ export function ActivityRow({ t }: { t: Transaction }) {
         </div>
       </td>
       <td className="hide-sm">{RAIL_LABEL[t.rail]}</td>
-      <td className="hide-sm"><span className={`pill ${t.isAsset ? "asset" : ""}`}>{t.isAsset ? "Asset" : CAT_LABEL[t.category]}</span></td>
+      <td className="hide-sm"><span className={`pill ${t.isAsset ? "asset" : ""}`}>{t.isAsset ? "Capex (APEX)" : CAT_LABEL[t.category]}</span></td>
       <td className={`right num strong ${isIn ? "in-text" : "out-text"}`}>
         {isIn ? "+" : "−"}{sym(t.currency)}{fmt(t.amount, t.currency).replace(/^[^\d]*/, "")}
       </td>
@@ -236,9 +236,9 @@ function EmptyState() {
       </section>
       <section className="grid-3">
         {[
-          ["1", "Record today's money", "Sales in, stock and rent out. Add the fee or IMTT as a percentage so it isn't lost.", "#/record", "Record money"],
+          ["1", "Record today's money", "Sales in, inventory and rent out. Add the fee or IMTT as a percentage so it isn't lost.", "#/record", "Record money"],
           ["2", "Use your market rate", "Paid in ZiG or rand? Enter the rate you actually got. Profit is worked out with it.", "#/record", "Record a ZiG sale"],
-          ["3", "Tag big purchases as assets", "A fridge isn't a cost of the month. Assets build your credit passport.", "#/passport", "About the passport"],
+          ["3", "Tag capital expenditure (APEX)", "A store fit-out or mannequins aren't a cost of the month. Capital expenditure builds your credit passport.", "#/passport", "About the passport"],
         ].map(([n, t, b, href, cta]) => (
           <div key={n} className="card step">
             <span className="step-n display">{n}</span>

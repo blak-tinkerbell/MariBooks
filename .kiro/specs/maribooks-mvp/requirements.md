@@ -202,6 +202,28 @@ tools) recorded as assets, so that I can show what I own and use it to secure fu
 5. THE asset base presented is **owner-declared** (acquisition cost of captured purchases); the
    system SHALL label it as such and SHALL NOT assert a verified market/collateral valuation.
 
+### Requirement 10 — Proof of transactions (invoice/receipt uploads)
+
+**User story:** As an owner, I want to attach the invoice or receipt behind an entry, so that
+my records are verifiable and a lender can trust them — not just take my word.
+
+#### Acceptance Criteria
+1. WHEN the owner records or edits a transaction THEN the system SHALL allow them to attach one
+   invoice or receipt file (image or PDF) as proof, stored privately and linked to the entry.
+2. THE system SHALL upload the file directly from the browser to private, encrypted object
+   storage using a short-lived, scoped credential, so the file does not pass through the API,
+   and SHALL confine every file to the owner's own namespace.
+3. WHEN a proof file is attached THEN the system MAY use a document-AI service (Amazon Textract
+   `AnalyzeExpense`) to extract the total, date and vendor to prefill the capture form; the
+   extracted values SHALL be re-validated against the domain and the owner SHALL confirm before
+   saving. Extraction is best-effort — if it is unavailable or low-confidence, the file still
+   attaches and the owner fills the form by hand.
+4. WHEN viewing a statement THEN the system SHALL indicate how many entries are backed by proof
+   and SHALL let the owner (or a consented lender) open each attached file via a short-lived
+   link.
+5. THE system SHALL keep proof files subject to the same ownership and consent rules as the
+   records they back; files are private by default and never publicly readable.
+
 ---
 
 ## Non-Functional Requirements

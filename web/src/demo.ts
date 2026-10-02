@@ -15,7 +15,7 @@
  * Built with the real domain `buildTransaction`, so the demo passes the same validation as live
  * data. Everything is deterministic (seeded RNG) so the figures are identical on every load.
  */
-import { buildTransaction, type NewTransactionInput, type Rail, type Transaction } from "@maribooks/shared";
+import { buildTransaction, type NewTransactionInput, type Proof, type Rail, type Transaction } from "@maribooks/shared";
 import { addDays, perUsdToRate, todayISO } from "./lib.js";
 
 function mulberry32(seed: number) {
@@ -59,6 +59,9 @@ export function seedDemo(today = todayISO()): Transaction[] {
     const dom = Number(date.slice(8, 10));
     const monthsIn = (days - back) / days;
     const growth = 1 + monthsIn * 0.4; // the boutique is growing
+    // Sample proof files (bundled with the app) attached to the records a lender cares about.
+    const invoice = (name: string): Proof => ({ key: "demo-proof/sample-invoice.svg", kind: "INVOICE", contentType: "image/svg+xml", fileName: name, uploadedAt: `${date}T09:00:00.000Z` });
+    const receipt = (name: string): Proof => ({ key: "demo-proof/sample-receipt.svg", kind: "RECEIPT", contentType: "image/svg+xml", fileName: name, uploadedAt: `${date}T09:00:00.000Z` });
 
     // ---- Monthly fixed costs (land even on a Sunday) --------------------------------------
     if (dom === 1) {
@@ -84,22 +87,23 @@ export function seedDemo(today = todayISO()): Transaction[] {
     }
 
     // ---- Capital assets: store renovations and display mannequins --------------------------
-    if (back === 150) add({ direction: "OUT", amount: "2400.00", currency: "USD", rail: "BANK", category: "OTHER", date, note: "Avondale store renovation (shopfit)", isAsset: true, assetClass: "PROPERTY", assetDescription: "Avondale store renovation (shopfit)", imtt: "48.00" });
+    if (back === 150) add({ direction: "OUT", amount: "2400.00", currency: "USD", rail: "BANK", category: "OTHER", date, note: "Avondale store renovation (shopfit)", isAsset: true, assetClass: "PROPERTY", assetDescription: "Avondale store renovation (shopfit)", imtt: "48.00", proof: invoice("avondale-shopfit-invoice.pdf") });
     if (back === 132) add({ direction: "OUT", amount: "640.00", currency: "USD", rail: "BANK", category: "OTHER", date, note: "Display mannequins ×8", isAsset: true, assetClass: "FURNITURE", assetDescription: "Display mannequins ×8", imtt: "12.80" });
     if (back === 70) add({ direction: "OUT", amount: "1850.00", currency: "USD", rail: "BANK", category: "OTHER", date, note: "CBD branch renovation & signage", isAsset: true, assetClass: "PROPERTY", assetDescription: "CBD branch renovation & signage", imtt: "37.00" });
     if (back === 44) add({ direction: "OUT", amount: "520.00", currency: "USD", rail: "BANK", category: "OTHER", date, note: "Glass display shelving & rails", isAsset: true, assetClass: "FURNITURE", assetDescription: "Glass display shelving & rails", imtt: "10.40" });
     if (back === 20) add({ direction: "OUT", amount: "380.00", currency: "USD", rail: "CARD", category: "OTHER", date, note: "Mannequins & mirror units", isAsset: true, assetClass: "FURNITURE", assetDescription: "Mannequins & mirror units", imtt: "7.60" });
 
     // ---- Import stock from China & Turkey (USD, bank transfer, IMTT) ------------------------
-    // Large orders a few times across the six months, timed around sourcing trips.
-    if (back === 160) add({ direction: "OUT", amount: "3200.00", currency: "USD", rail: "BANK", category: "STOCK", date, note: "China order — clothing containers", imtt: "64.00" });
-    if (back === 118) add({ direction: "OUT", amount: "2100.00", currency: "USD", rail: "BANK", category: "STOCK", date, note: "Turkey order — dresses & handbags", imtt: "42.00" });
-    if (back === 76) add({ direction: "OUT", amount: "2850.00", currency: "USD", rail: "BANK", category: "STOCK", date, note: "China order — accessories & shoes", imtt: "57.00" });
-    if (back === 30) add({ direction: "OUT", amount: "2450.00", currency: "USD", rail: "BANK", category: "STOCK", date, note: "Turkey order — autumn range", imtt: "49.00" });
+    // Large orders a few times across the six months, timed around sourcing trips. These carry
+    // a sample invoice as proof — the kind of evidence a lender wants to see behind a record.
+    if (back === 160) add({ direction: "OUT", amount: "3200.00", currency: "USD", rail: "BANK", category: "STOCK", date, note: "China order — clothing containers", imtt: "64.00", proof: invoice("guangzhou-invoice.pdf") });
+    if (back === 118) add({ direction: "OUT", amount: "2100.00", currency: "USD", rail: "BANK", category: "STOCK", date, note: "Turkey order — dresses & handbags", imtt: "42.00", proof: invoice("istanbul-textiles-invoice.pdf") });
+    if (back === 76) add({ direction: "OUT", amount: "2850.00", currency: "USD", rail: "BANK", category: "STOCK", date, note: "China order — accessories & shoes", imtt: "57.00", proof: invoice("guangzhou-invoice-2.pdf") });
+    if (back === 30) add({ direction: "OUT", amount: "2450.00", currency: "USD", rail: "BANK", category: "STOCK", date, note: "Turkey order — autumn range", imtt: "49.00", proof: invoice("istanbul-autumn-invoice.pdf") });
 
     // ---- Business trips to source stock: flights, accommodation, transport -----------------
     // A sourcing trip clusters its costs over a few days.
-    if (back === 164) add({ direction: "OUT", amount: "860.00", currency: "USD", rail: "CARD", category: "TRANSPORT", date, note: "Flights — Guangzhou sourcing trip" });
+    if (back === 164) add({ direction: "OUT", amount: "860.00", currency: "USD", rail: "CARD", category: "TRANSPORT", date, note: "Flights — Guangzhou sourcing trip", proof: receipt("guangzhou-flight-receipt.jpg") });
     if (back === 163) add({ direction: "OUT", amount: "420.00", currency: "USD", rail: "CARD", category: "TRANSPORT", date, note: "Hotel — Guangzhou (4 nights)" });
     if (back === 162) add({ direction: "OUT", amount: "95.00", currency: "USD", rail: "CASH", category: "TRANSPORT", date, note: "Taxis & market transport — China" });
     if (back === 122) add({ direction: "OUT", amount: "540.00", currency: "USD", rail: "CARD", category: "TRANSPORT", date, note: "Flights — Istanbul sourcing trip" });

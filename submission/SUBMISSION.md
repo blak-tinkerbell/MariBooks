@@ -35,11 +35,12 @@ MariBooks answers that question in one screen and turns the same records into a 
 |---|---|
 | **Record money in seconds** | Money in / out, in USD, ZiG or ZAR, on cash, EcoCash, OneMoney, InnBucks, Zipit, bank or card. Every amount stays in the currency it happened in. |
 | **Paste the SMS instead of typing** | Paste an EcoCash, InnBucks or bank confirmation SMS and the form fills itself: amount, currency, direction, rail, fee, IMTT, reference, date. It never reads the running balance as the amount. |
+| **Snap the invoice or receipt** | Attach an invoice or receipt to any entry. **Amazon Textract** reads the total, date and vendor and fills the form; the owner confirms before saving. The file is proof a lender can open — a passport entry backed by a receipt is verifiable, not just claimed. |
 | **Fees and IMTT as percentages** | Enter "2%" and MariBooks works out the charge and keeps it separate from the principal, so profit is honest. |
 | **The rate you actually got** | For ZiG and ZAR the owner enters the **market rate** they traded at. A separate **official** rate table drives statutory-style reports. Every figure shows which basis it uses. |
 | **"Are you making money?"** | Dashboard: profit for the period with the change on the previous one, money in, operating costs, asset spend, fees & IMTT, six-month profit trend, cash by payment method, recent activity. Switch the view between USD / ZiG / ZAR and market / official in one tap. |
-| **Assets kept out of profit** | Buying a fridge doesn't wreck a month's profit. It's tagged as an asset and builds the declared asset base. |
-| **Lender-ready statement** | Income statement for any period: money in, operating costs by category, net profit and margin, assets below the line, rate basis and currency mix disclosed. Download as PDF. |
+| **Capital expenditure (APEX) kept out of profit** | Buying a store fit-out or display mannequins doesn't wreck a month's profit. It's tagged as capital expenditure (APEX) and builds the declared capital base. |
+| **Lender-ready statement** | Statement of Comprehensive Income for any period: money in, operating costs by category, net profit and margin, capital expenditure below the line, rate basis and currency mix disclosed. Download as PDF. |
 | **Credit passport, with consent** | Average monthly turnover, cash-flow stability, continuous-record length, declared assets, and a 4-point readiness check. Shared only after explicit consent, revocable at any time. Entries in an active share are locked, so a lender always sees exactly what was sent. |
 | **Works on bad connections** | If a save fails because the connection dropped, the entry is kept on the device and synced when the connection returns — idempotent ids mean it is never duplicated. The app shell loads offline. |
 | **Every field validated** | Amounts (positive, 2 decimals), percentages (0–100, with a warning above 20%), rates, dates (not in the future), asset details, notes (80 chars), passwords matching the account policy — with plain-language messages next to the field. |
@@ -57,13 +58,14 @@ MariBooks answers that question in one screen and turns the same records into a 
 2. **Dual rate basis.** Each foreign-currency entry carries the owner's effective (street) rate; reports can instead use a dated official rate table (most-recent-on-or-before lookup, inverse pairs handled). The basis label travels with every figure.
 3. **Honest fees.** Rail fees and IMTT are stored separately from principal and counted as operating costs on both money in and money out. (The agent's end-to-end test caught that fees on money *received* were being dropped from profit; it's fixed and covered by a test.)
 4. **Payment-SMS parser.** A deterministic parser in the shared domain package reads amount, currency (incl. ZWG → ZiG), direction, rail, fee, IMTT, counterparty, reference and date, strips running balances first, and reports its own confidence. It runs in the browser with no network. On the server, `POST /parse` can hand low-confidence messages to **Amazon Bedrock** (optional, one CloudFormation parameter); the model's output is re-validated against the domain enums before use, and rule-extracted fields always win.
+8. **Proof-of-transaction uploads with Textract.** Invoices and receipts are uploaded straight from the browser to a private S3 bucket via short-lived presigned URLs — the file never passes through Lambda. **Amazon Textract** (`AnalyzeExpense`) reads the total, date and vendor; like the SMS path, its output is re-validated against the domain before it prefills the form, and the owner confirms before saving. Every object key is forced under the owner's tenant prefix, so a presigned URL can only ever touch that owner's own files. The bucket is private (no public access), KMS-encrypted, versioned, and CORS-locked to the app origin. The Textract region is configurable because the service and the bucket must share a region (Textract isn't offered in af-south-1); scanning degrades gracefully to manual entry if unavailable, and the proof file is still stored either way.
 5. **Consent-gated, lockable sharing.** A share can only be created with an explicit consent flag (enforced in the domain *and* the API). Transactions in an active share are locked against edit/delete server-side (HTTP 409), so a shared passport can't be quietly changed.
 6. **Offline-tolerant capture.** Client-generated UUIDs are idempotency keys, so the outbox can resend safely; the API's PutItem on PK+SK makes retries produce exactly one record.
 7. **Security for financial data:** Cognito JWT on every route, tenant id only from the token claim, customer-managed KMS encryption, PITR, least-privilege IAM, locked CORS, WAF, CloudTrail with log-file validation, alarms to SNS.
 
 ![Architecture](./architecture.png)
 
-**Tests:** 40 domain unit tests (money, FX, ledger, reporting, passport, assets, SMS parser, fees on money in) + 4 API integration tests (idempotent retries, recoverable failed saves, SMS parse route) — 44 in total, all passing.
+**Tests:** 44 domain unit tests (money, FX, ledger, reporting, passport, assets, SMS parser, fees on money in, proof attachments) + 4 API integration tests (idempotent retries, recoverable failed saves, SMS parse route) — 48 in total, all passing.
 
 ## Community & market impact
 
@@ -75,7 +77,7 @@ MariBooks answers that question in one screen and turns the same records into a 
 ## Where it's headed (Startups lane)
 
 - **Business model:** free for owners to record and see profit; lenders and microfinance institutions pay for verified, consented passports and statements; premium tax-ready reports for growing SMEs.
-- **Next:** a lender view reached through the share link, WhatsApp and USSD capture for feature phones, receipt photos, ZIMRA fiscal-invoice integration, and more languages (Shona and Ndebele).
+- **Next:** a full double-entry accounting phase — general ledger and chart of accounts, trial balance with a self-balancing suspense account, cashbook, bank reconciliation, and open/carry-forward accounting calendars, producing a Statement of Comprehensive Income and a Statement of Financial Position. Scoped in [`.kiro/specs/maribooks-accounting/`](../.kiro/specs/maribooks-accounting/README.md). Plus a lender view through the share link, WhatsApp and USSD capture for feature phones, ZIMRA fiscal-invoice integration, and more languages (Shona and Ndebele).
 - **Flywheel:** the more an owner records, the stronger their passport, the more reason to keep recording.
 
 ## How the coding agent helped me ship
@@ -98,8 +100,9 @@ Concrete moments:
 1. Open **https://d3vn6ch6zctfj4.cloudfront.net/?demo**.
 2. **Dashboard:** switch USD → ZiG → ZAR and Market rate → Official. Every figure recalculates and says which basis it uses.
 3. **Record money:** paste `You paid USD 2,100.00 to Istanbul Textiles on 12/09/2026. Charge: USD 10.00 IMTT: USD 42.00 Ref TR8842` into "Paste a payment SMS" → **Fill the form** (a boutique stock import). Try an amount like `12.345` or a fee of `150` to see validation.
-4. **Statement:** pick a period → **Download PDF**.
-5. **Credit passport:** share with a lender (consent required), then revoke it.
+4. **Attach a receipt:** in a signed-in account, open **Record money → Attach an invoice or receipt**, upload a photo or PDF, and watch Amazon Textract fill the total and date. In the demo, some entries already have a sample invoice/receipt — see them under **Statement → Proof of transactions**.
+5. **Statement:** pick a period → **Download PDF**.
+6. **Credit passport:** share with a lender (consent required), then revoke it.
 
 ## Screenshots
 

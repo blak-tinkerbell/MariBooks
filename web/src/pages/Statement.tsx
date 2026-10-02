@@ -46,7 +46,7 @@ export function Statement({ data }: { data: AppData }) {
 
   return (
     <>
-      <PageHeader title="Statement" sub="A lender-ready income statement built from your records.">
+      <PageHeader title="Statement" sub="A lender-ready statement of comprehensive income built from your records.">
         <ViewControls {...view} />
       </PageHeader>
 
@@ -76,7 +76,7 @@ export function Statement({ data }: { data: AppData }) {
               <Chevrons id="stmtChev" height={52} opacity={0.2} />
               <div className="statement-head-inner">
                 <div>
-                  <div className="eyebrow gold">Income statement</div>
+                  <div className="eyebrow gold">Statement of Comprehensive Income</div>
                   <div className="display statement-biz">{s.business.name || "My business"}</div>
                   <div className="dim">{longDate(range.from)} – {longDate(range.to)} · in {cur}</div>
                 </div>
@@ -111,11 +111,11 @@ export function Statement({ data }: { data: AppData }) {
                 <span className="display num">{nf(s.totals.netProfit)}</span>
               </div>
               <table className="table fin">
-                <caption>Below the line · not in profit</caption>
+                <caption>Capital expenditure (APEX) · below the line, not in profit</caption>
                 <tbody>
-                  {Object.keys(s.assetsAcquired).length === 0 && <tr><th scope="row" className="muted">No assets bought this period</th><td className="right num">{nf("0")}</td></tr>}
+                  {Object.keys(s.assetsAcquired).length === 0 && <tr><th scope="row" className="muted">No capital expenditure this period</th><td className="right num">{nf("0")}</td></tr>}
                   {Object.entries(s.assetsAcquired).map(([k, v]) => (
-                    <tr key={k}><th scope="row">Assets · {ASSET_LABEL[k as keyof typeof ASSET_LABEL]} ({v.count})</th><td className="right num">{nf(v.value)}</td></tr>
+                    <tr key={k}><th scope="row">APEX · {ASSET_LABEL[k as keyof typeof ASSET_LABEL]} ({v.count})</th><td className="right num">{nf(v.value)}</td></tr>
                   ))}
                 </tbody>
               </table>
@@ -144,9 +144,25 @@ export function Statement({ data }: { data: AppData }) {
               <ul className="checklist">
                 <Check ok={scoped.length > 0} text={`${scoped.length} entries in this period`} />
                 <Check ok={scoped.filter((t) => t.currency !== "USD").every((t) => !!t.effectiveRate)} text="Every ZiG/ZAR entry has a market rate" />
-                <Check ok={scoped.every((t) => !t.isAsset || !!t.assetClass)} text="Assets are classified" />
+                <Check ok={scoped.every((t) => !t.isAsset || !!t.assetClass)} text="Capital expenditure is classified" />
+                <Check ok={scoped.some((t) => t.proof)} text={`${scoped.filter((t) => t.proof).length} entries backed by an invoice or receipt`} />
               </ul>
             </div>
+            {scoped.some((t) => t.proof) && (
+              <div className="card stack-sm">
+                <h2>Proof of transactions</h2>
+                <p className="muted">Invoices and receipts attached to this period's records. A lender can open each one.</p>
+                <ul className="proof-list">
+                  {scoped.filter((t) => t.proof).slice(0, 8).map((t) => (
+                    <li key={t.id}>
+                      <button type="button" className="link-btn" onClick={() => openProof(data, t.proof!.key)}>
+                        <Icon name="message" size={16} /> {t.proof!.kind === "INVOICE" ? "Invoice" : "Receipt"} · {t.note || CAT_LABEL[t.category]}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </aside>
         </div>
       )}
@@ -156,6 +172,16 @@ export function Statement({ data }: { data: AppData }) {
 
 function Check({ ok, text }: { ok: boolean; text: string }) {
   return <li className={ok ? "ok" : "todo"}><Icon name={ok ? "check" : "alert"} size={18} stroke={2.2} />{text}</li>;
+}
+
+/** Resolve a short-lived URL for a proof file and open it in a new tab. */
+async function openProof(data: AppData, key: string) {
+  try {
+    const url = await data.store.proofViewUrl(key);
+    if (url) window.open(url, "_blank", "noopener");
+  } catch {
+    /* viewing proof is best-effort; a failure is non-fatal */
+  }
 }
 
 /**

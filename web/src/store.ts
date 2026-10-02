@@ -10,11 +10,12 @@ import {
   sharePassport,
   revokeShare as revokeLink,
   type OfficialRate,
+  type ReceiptDraft,
   type ShareLink,
   type SmsDraft,
   type Transaction,
 } from "@maribooks/shared";
-import { api } from "./api.js";
+import { api, uploadToPresignedUrl } from "./api.js";
 import { DEMO_BUSINESS, seedDemo } from "./demo.js";
 import { SAMPLE_OFFICIAL_RATES } from "./lib.js";
 
@@ -39,6 +40,14 @@ export interface DataStore {
   getRates(): Promise<{ rates: OfficialRate[]; sample: boolean }>;
   putRate(r: OfficialRate): Promise<void>;
   parseSms(text: string): Promise<SmsDraft>;
+  /** Upload an invoice/receipt and return the stored key. Returns null when unsupported (demo). */
+  uploadProof(file: File): Promise<string | null>;
+  /** Extract fields from an uploaded proof file with Textract. Null when unsupported (demo). */
+  scanReceipt(key: string, kind: "RECEIPT" | "INVOICE"): Promise<ReceiptDraft | null>;
+  /** A short-lived URL to view a stored proof file. Null when unsupported (demo). */
+  proofViewUrl(key: string): Promise<string | null>;
+  /** Whether proof upload/scan is available in this mode. */
+  proofSupported(): boolean;
   businessName(): Promise<string>;
   setBusinessName(name: string): Promise<void>;
   pendingCount(): number;
@@ -132,6 +141,20 @@ export class LiveStore implements DataStore {
       return local;
     }
   }
+  proofSupported() {
+    return true;
+  }
+  async uploadProof(file: File): Promise<string | null> {
+    const { uploadUrl, key } = await api.proofUploadUrl(file.type);
+    await uploadToPresignedUrl(uploadUrl, file);
+    return key;
+  }
+  async scanReceipt(key: string, kind: "RECEIPT" | "INVOICE") {
+    return api.scanReceipt(key, kind);
+  }
+  async proofViewUrl(key: string) {
+    return (await api.proofViewUrl(key)).url;
+  }
   async businessName() {
     try {
       return (await api.getProfile()).name;
@@ -152,7 +175,7 @@ export class LiveStore implements DataStore {
 }
 
 // ---------------------------------------------------------------- demo
-const DEMO_KEY = "mb.demo.v2";
+const DEMO_KEY = "mb.demo.v3";
 
 interface DemoState {
   txns: Transaction[];
@@ -229,6 +252,22 @@ export class DemoStore implements DataStore {
   }
   async parseSms(text: string) {
     return parseMoneySms(text);
+  }
+  // The demo has no backend, so live uploads/scans aren't available. Demo transactions that
+  // carry a `proof.key` point at a bundled sample image (served from the SPA) so judges can
+  // still see "view receipt" working end to end.
+  proofSupported() {
+    return false;
+  }
+  async uploadProof(): Promise<string | null> {
+    return null;
+  }
+  async scanReceipt(): Promise<ReceiptDraft | null> {
+    return null;
+  }
+  async proofViewUrl(key: string) {
+    // Demo proof keys are relative paths under /demo-proof/ bundled with the app.
+    return key.startsWith("demo-proof/") ? `${import.meta.env.BASE_URL}${key}` : null;
   }
   async businessName() {
     return this.state.name;

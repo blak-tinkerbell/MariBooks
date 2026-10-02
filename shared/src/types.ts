@@ -75,6 +75,20 @@ export interface EffectiveRate {
   rate: string; // decimal string; never a float
 }
 
+/**
+ * Proof of a transaction — an uploaded invoice or receipt image/PDF, stored privately in S3.
+ * `key` is the object key under the owner's tenant prefix; the file itself never passes through
+ * the API (the browser uploads it straight to S3 with a short-lived presigned URL). Attaching
+ * proof strengthens the record for a lender: a passport entry backed by a receipt is verifiable.
+ */
+export interface Proof {
+  key: string; // S3 object key, e.g. "TENANT#<sub>/proof/<uuid>.jpg"
+  kind: "RECEIPT" | "INVOICE";
+  contentType: string; // e.g. "image/jpeg", "application/pdf"
+  fileName?: string; // original name, for display only
+  uploadedAt: ISODate;
+}
+
 export interface Transaction {
   id: string; // client-generated UUID; idempotency key
   direction: Direction;
@@ -90,8 +104,24 @@ export interface Transaction {
   isAsset?: boolean; // money-out only
   assetClass?: AssetClass; // required when isAsset === true
   assetDescription?: string;
+  proof?: Proof; // optional uploaded invoice/receipt backing this entry
   createdAt: ISODate;
   updatedAt: ISODate;
+}
+
+/**
+ * Draft fields extracted from an uploaded receipt/invoice by Amazon Textract (AnalyzeExpense).
+ * Like SmsDraft, it is treated as untrusted: every field is re-validated against the domain
+ * before it is offered to prefill the capture form, and the owner always confirms before saving.
+ */
+export interface ReceiptDraft {
+  amount?: string; // total, decimal string, no thousands separators
+  currency?: Currency; // only when confidently detected
+  date?: ISODate; // yyyy-mm-dd
+  vendor?: string; // supplier/merchant name → note
+  kind: "RECEIPT" | "INVOICE";
+  confidence: "HIGH" | "MEDIUM" | "LOW";
+  source: "TEXTRACT";
 }
 
 export type CurrencyPair = "USD/ZiG" | "USD/ZAR" | "ZiG/ZAR";

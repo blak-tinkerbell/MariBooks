@@ -14,7 +14,7 @@ Account: `985923204885` · Profile: `MariBooks` · Primary region: `af-south-1`
 - CloudFront `DistributionConfig.WebACLId` is set to the WAF WebACL ARN.
 - SSM `/maribooks/prod/cors-origin` resolves to the app origin.
 - CloudTrail `maribooks-prod-trail` `IsLogging` = **true**.
-- Test suite: **44 pass** (40 shared domain + 4 API integration). All workspaces build clean.
+- Test suite: **48 pass** (44 shared domain + 4 API integration). All workspaces build clean.
 
 ## Core stack — `maribooks-prod` (af-south-1)
 
@@ -29,8 +29,15 @@ Account: `985923204885` · Profile: `MariBooks` · Primary region: `af-south-1`
 | KMS key | customer-managed, rotation enabled (`alias/maribooks-prod-data`) |
 
 Data routes require a Cognito JWT; tenant id comes only from the `sub` claim. IAM is scoped to
-the one table, the one KMS key, and the one SSM parameter. Routes include transactions, rates,
-profile, and the consent-gated `GET/PUT/DELETE /shares`.
+the one table, the one KMS key, the one SSM parameter, the proof bucket, and `textract:AnalyzeExpense`.
+Routes include transactions, rates, profile, the consent-gated `GET/PUT/DELETE /shares`, and the
+proof routes (`POST /proof/upload-url`, `POST /proof/scan`, `GET /proof/view`).
+
+| Proof store (invoices/receipts) | S3 `maribooks-prod-proof-985923204885` (private, SSE-KMS, versioned, CORS to app origin) |
+| Receipt reader | Amazon Textract `AnalyzeExpense` (on-demand, no stored model) |
+
+Proof files are uploaded by the browser via short-lived presigned URLs and never pass through
+Lambda; every object key is forced under the owner's `TENANT#<sub>/proof/` prefix.
 
 ## Hosting stack — `maribooks-hosting` (af-south-1)
 
@@ -69,6 +76,32 @@ CLOUDFRONT-scope WebACL (must live in us-east-1). Deploy/associate procedure in 
 | Alarms | Lambda `Errors` + API `5xx` → SNS |
 
 Deploy/params (Lambda name, HTTP API id, optional alarm email) documented in `infra/AUDIT_DEPLOY.md`.
+
+## Deploying proof uploads + Textract (Oct 2026)
+
+The core stack gains an S3 proof bucket, three `/proof/*` routes, and `textract:AnalyzeExpense`
+IAM. Deploy the API (`sam deploy`) first so the bucket and routes exist, then rebuild and sync
+the web app. No Bedrock change is needed. Verify after deploy:
+
+```bash
+# API: proof routes + bucket. SAM creates the bucket and wires PROOF_BUCKET automatically.
+npm run build
+cd infra && sam build && sam deploy --profile MariBooks --region af-south-1
+cd ..
+# Confirm the proof bucket output and that an unauthenticated proof call is rejected (401):
+aws cloudformation describe-stacks --stack-name maribooks-prod --profile MariBooks --region af-south-1 \
+  --query "Stacks[0].Outputs[?OutputKey=='ProofBucketName'].OutputValue" --output text
+curl -s -o /dev/null -w "%{http_code}\n" -X POST https://h6khi16q5m.execute-api.af-south-1.amazonaws.com/prod/proof/upload-url
+# Then rebuild + redeploy the web app (same sync + invalidate as below).
+```
+
+**Region note (verified against AWS docs):** Amazon Textract is **not** offered in af-south-1,
+and `AnalyzeExpense` with an S3 object requires the bucket and the Textract call to be in the
+**same** region. So receipt *storage* works in af-south-1, but *scanning* does not run there. To
+enable scanning, deploy the proof bucket in a Textract region (e.g. `eu-west-1`) as its own small
+stack and set `TextractRegion` to match. Until then the feature degrades gracefully: the file
+still uploads and attaches, and the owner fills the form by hand (the scan call returns a
+low-confidence empty draft, never an error to the user).
 
 ## Deploying the redesign + SMS parsing (Oct 2026)
 

@@ -87,8 +87,17 @@ of record.
   container/Docker dependency) → Amazon DynamoDB (single-table design).
 - **Hosting / public URL:** SPA static assets in Amazon S3, served through Amazon CloudFront
   (the public URL judges and the AI scoring system reach).
+- **Proof storage + document AI:** uploaded invoices/receipts go to a private, KMS-encrypted S3
+  bucket via browser presigned URLs (the file never passes through Lambda). **Amazon Textract**
+  (`AnalyzeExpense`) extracts total/date/vendor; the result is re-validated against the domain
+  before it prefills the capture form. Textract and the bucket must share a region (Textract is
+  not offered in af-south-1), so the Textract region is a deploy-time parameter and scanning
+  degrades gracefully to manual entry when unavailable.
+- **Optional document/LLM AI:** **Amazon Bedrock** optionally refines low-confidence payment-SMS
+  parses; the deterministic rules parser always runs first and wins where it found a field.
 - **Infrastructure as code:** AWS SAM (`template.yaml`) provisions API Gateway, Lambda,
-  DynamoDB, S3 and CloudFront, and outputs the API endpoint and the CloudFront URL.
+  DynamoDB, the S3 proof bucket, S3 and CloudFront, and outputs the API endpoint and the
+  CloudFront URL.
 - **Region:** af-south-1 (Cape Town — closest to the Zimbabwean user base; overridable at deploy time).
 
 ### DynamoDB single-table design
