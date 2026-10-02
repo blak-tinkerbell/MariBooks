@@ -1,7 +1,11 @@
 # Deployed stacks — MariBooks
 
-Account: `985923204885` · Profile: `MariBooks` · Primary region: `af-south-1`
+Account: `############` · Profile: `MariBooks` · Primary region: `af-south-1`
 (WAF in `us-east-1`, required for CloudFront scope). All four stacks deployed and verified live.
+
+> Account ID and account-specific resource identifiers (bucket names, distribution ID,
+> API/Cognito IDs, Lambda/WebACL names) are redacted (`#`) for the public repo. Replace the
+> placeholders with your own values when deploying.
 
 ## Public app URL (ship gate) ✅
 **https://d3vn6ch6zctfj4.cloudfront.net** — live, serves HTTP 200.
@@ -20,11 +24,11 @@ Account: `985923204885` · Profile: `MariBooks` · Primary region: `af-south-1`
 
 | Output / resource | Value |
 |---|---|
-| API endpoint | `https://h6khi16q5m.execute-api.af-south-1.amazonaws.com/prod` |
-| Cognito User Pool | `af-south-1_EsVd6dQTv` |
-| Cognito App Client | `3b8gsvgbvteake88t6dnke70ci` |
+| API endpoint | `https://<api-id>.execute-api.af-south-1.amazonaws.com/prod` |
+| Cognito User Pool | `af-south-1_<redacted>` |
+| Cognito App Client | `<redacted>` |
 | DynamoDB table | `maribooks-prod` (SSE-KMS, PITR, deletion protection) |
-| Lambda | `maribooks-prod-ApiFunction-uTnkm0cJY2Ot` (Node 22, arm64, X-Ray, reserved concurrency 20) |
+| Lambda | `maribooks-prod-ApiFunction-<redacted>` (Node 22, arm64, X-Ray, reserved concurrency 20) |
 | SSM config param | `/maribooks/prod/cors-origin` |
 | KMS key | customer-managed, rotation enabled (`alias/maribooks-prod-data`) |
 
@@ -33,7 +37,7 @@ the one table, the one KMS key, the one SSM parameter, the proof bucket, and `te
 Routes include transactions, rates, profile, the consent-gated `GET/PUT/DELETE /shares`, and the
 proof routes (`POST /proof/upload-url`, `POST /proof/scan`, `GET /proof/view`).
 
-| Proof store (invoices/receipts) | S3 `maribooks-prod-proof-985923204885` (private, SSE-KMS, versioned, CORS to app origin) |
+| Proof store (invoices/receipts) | S3 `maribooks-prod-proof-############` (private, SSE-KMS, versioned, CORS to app origin) |
 | Receipt reader | Amazon Textract `AnalyzeExpense` (on-demand, no stored model) |
 
 Proof files are uploaded by the browser via short-lived presigned URLs and never pass through
@@ -44,8 +48,8 @@ Lambda; every object key is forced under the owner's `TENANT#<sub>/proof/` prefi
 | Output / resource | Value |
 |---|---|
 | CloudFront URL | `https://d3vn6ch6zctfj4.cloudfront.net` |
-| Distribution ID | `E1QN9VIES8PZAU` |
-| SPA S3 bucket | `maribooks-prod-spa-985923204885` (private, OAC only, versioned, encrypted) |
+| Distribution ID | `<redacted>` |
+| SPA S3 bucket | `maribooks-prod-spa-############` (private, OAC only, versioned, encrypted) |
 | WAF association | `WebAclArn` param → `DistributionConfig.WebACLId` |
 
 Private S3 served only via CloudFront OAC; HTTPS-only; HSTS/nosniff/frame-deny response headers;
@@ -53,15 +57,15 @@ SPA fallback (403/404 → `index.html`). Redeploy the SPA after a rebuild:
 
 ```bash
 npm run build --workspace web
-aws s3 sync web/dist s3://maribooks-prod-spa-985923204885 --delete --profile MariBooks --region af-south-1
-aws cloudfront create-invalidation --distribution-id E1QN9VIES8PZAU --paths "/*" --profile MariBooks
+aws s3 sync web/dist s3://maribooks-prod-spa-<account-id> --delete --profile MariBooks --region af-south-1
+aws cloudfront create-invalidation --distribution-id <distribution-id> --paths "/*" --profile MariBooks
 ```
 
 ## WAF stack — `maribooks-waf` (us-east-1)
 
 | Output / resource | Value |
 |---|---|
-| WebACL ARN | `arn:aws:wafv2:us-east-1:985923204885:global/webacl/maribooks-prod-cf-webacl/0580f0d2-2e97-4115-b83d-fd55f4036baa` |
+| WebACL ARN | `arn:aws:wafv2:us-east-1:############:global/webacl/maribooks-prod-cf-webacl/<redacted>` |
 | Rules | AWSManagedRulesCommonRuleSet, AWSManagedRulesKnownBadInputsRuleSet, IP rate limit (2000 / 5 min) |
 
 CLOUDFRONT-scope WebACL (must live in us-east-1). Deploy/associate procedure in `infra/WAF_DEPLOY.md`.
@@ -91,7 +95,7 @@ cd ..
 # Confirm the proof bucket output and that an unauthenticated proof call is rejected (401):
 aws cloudformation describe-stacks --stack-name maribooks-prod --profile MariBooks --region af-south-1 \
   --query "Stacks[0].Outputs[?OutputKey=='ProofBucketName'].OutputValue" --output text
-curl -s -o /dev/null -w "%{http_code}\n" -X POST https://h6khi16q5m.execute-api.af-south-1.amazonaws.com/prod/proof/upload-url
+curl -s -o /dev/null -w "%{http_code}\n" -X POST https://<api-id>.execute-api.af-south-1.amazonaws.com/prod/proof/upload-url
 # Then rebuild + redeploy the web app (same sync + invalidate as below).
 ```
 
@@ -117,12 +121,12 @@ cd infra && sam build && sam deploy --profile MariBooks --region af-south-1
 cd ..
 
 # 2. Web: build with the stack outputs, sync and invalidate.
-VITE_API_ENDPOINT=https://h6khi16q5m.execute-api.af-south-1.amazonaws.com/prod \
-VITE_USER_POOL_ID=af-south-1_EsVd6dQTv \
-VITE_USER_POOL_CLIENT_ID=3b8gsvgbvteake88t6dnke70ci \
+VITE_API_ENDPOINT=https://<api-id>.execute-api.af-south-1.amazonaws.com/prod \
+VITE_USER_POOL_ID=af-south-1_<redacted> \
+VITE_USER_POOL_CLIENT_ID=<redacted> \
 npm run build --workspace web
-aws s3 sync web/dist s3://maribooks-prod-spa-985923204885 --delete --profile MariBooks --region af-south-1
-aws cloudfront create-invalidation --distribution-id E1QN9VIES8PZAU --paths "/*" --profile MariBooks
+aws s3 sync web/dist s3://maribooks-prod-spa-<account-id> --delete --profile MariBooks --region af-south-1
+aws cloudfront create-invalidation --distribution-id <distribution-id> --paths "/*" --profile MariBooks
 ```
 
 Then check in a private window: `/` shows sign-in with "Try the demo", `/?demo` opens the demo

@@ -13,7 +13,7 @@ posted on your Builder Center project before then. Verify each item against the 
 - [x] The live app works end to end (auth → capture → dashboard → statement → passport);
       API verified against the live stack (200s, validation 400, tenant-scoped list).
 - [x] A **coding agent is connected to AWS** with **documented proof**
-      (`submission/aws-connection-proof.md`, account 985923204885, af-south-1).
+      (`submission/aws-connection-proof.md`, account ID redacted, af-south-1).
 - [ ] The application is **original** and has **not been published before** — confirm.
 
 > If the app is not live and reachable, the project does not advance to judging — no exceptions.

@@ -7,11 +7,13 @@ Auth: AWS IAM Identity Center (SSO), profile MariBooks, role AWSAdministratorAcc
 ```
 $ aws sts get-caller-identity --profile MariBooks
 {
-    "UserId": "AROA6LDM2G4K6RBLR2XEH:tari",
-    "Account": "985923204885",
-    "Arn": "arn:aws:sts::985923204885:assumed-role/AWSReservedSSO_AWSAdministratorAccess_292b7e3f15db9d32/tari"
+    "UserId": "####################:tari",
+    "Account": "############",
+    "Arn": "arn:aws:sts::############:assumed-role/AWSReservedSSO_<permission-set>/tari"
 }
 ```
+
+> Account ID, user ID and SSO role identifiers are redacted for the public repo.
 
 ## Agent session screenshots
 

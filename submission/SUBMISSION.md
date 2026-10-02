@@ -85,9 +85,9 @@ MariBooks was built with two agents, each doing what it does best:
 ```
 $ aws sts get-caller-identity --profile MariBooks
 {
-    "UserId": "AROA6LDM2G4K6RBLR2XEH:tari",
-    "Account": "985923204885",
-    "Arn": "arn:aws:sts::985923204885:assumed-role/AWSReservedSSO_AWSAdministratorAccess_292b7e3f15db9d32/tari"
+    "UserId": "####################:tari",
+    "Account": "############",
+    "Arn": "arn:aws:sts::############:assumed-role/AWSReservedSSO_<permission-set>/tari"
 }
 ```
 
@@ -95,7 +95,7 @@ $ aws sts get-caller-identity --profile MariBooks
 
 ![Kiro connected to AWS: identity check, stack deployment, S3 sync, CloudFront invalidation and live verification](https://raw.githubusercontent.com/blak-tinkerbell/MariBooks/main/submission/screenshots/10-kiro-aws-connection-proof.png)
 
-*What the panels show:* Kiro confirming the SSO identity with `sts get-caller-identity` (account 985923204885, region af-south-1) and recording it as the connection proof; validating and deploying the hosting CloudFormation stack and reading stack events to diagnose a failed changeset; syncing the built SPA to S3 and invalidating CloudFront until complete; and verifying the live app from the terminal (app root, current bundle, service worker and manifest all HTTP 200, unauthenticated API call HTTP 401).
+*What the panels show:* Kiro confirming the SSO identity with `sts get-caller-identity` (account ID redacted, region af-south-1) and recording it as the connection proof; validating and deploying the hosting CloudFormation stack and reading stack events to diagnose a failed changeset; syncing the built SPA to S3 and invalidating CloudFront until complete; and verifying the live app from the terminal (app root, current bundle, service worker and manifest all HTTP 200, unauthenticated API call HTTP 401).
 
 Kiro drafted the specs and then executed them: [requirements](https://github.com/blak-tinkerbell/MariBooks/blob/main/.kiro/specs/maribooks-mvp/requirements.md) → [design](https://github.com/blak-tinkerbell/MariBooks/blob/main/.kiro/specs/maribooks-mvp/design.md) → [infrastructure](https://github.com/blak-tinkerbell/MariBooks/blob/main/.kiro/specs/maribooks-mvp/infrastructure.md) → [tasks](https://github.com/blak-tinkerbell/MariBooks/blob/main/.kiro/specs/maribooks-mvp/tasks.md).
 

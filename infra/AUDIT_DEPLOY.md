@@ -1,7 +1,7 @@
 # Audit & Observability Stack — Deploy Guide
 
 `infra/audit.yaml` is a **standalone** CloudFormation template (region `af-south-1`, account
-`985923204885`, profile `MariBooks`). It is independent of the core `maribooks-prod` stack, so
+`############`, profile `MariBooks`). It is independent of the core `maribooks-prod` stack, so
 deploying/updating/deleting it never touches the deployed app resources.
 
 ## What it creates

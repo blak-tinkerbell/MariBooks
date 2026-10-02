@@ -6,7 +6,7 @@ separate stack. Deploy it first, grab its output ARN, then update the hosting
 stack to associate it.
 
 Existing hosting stack: `maribooks-hosting` (af-south-1)
-Existing CloudFront distribution id: `E1QN9VIES8PZAU`
+Existing CloudFront distribution id: `<distribution-id>`
 
 ## Step 1 — Deploy the WAF stack to us-east-1
 

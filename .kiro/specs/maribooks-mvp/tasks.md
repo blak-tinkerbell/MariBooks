@@ -5,7 +5,7 @@ possible, and references the requirements it satisfies. Complete tasks top to bo
 
 > **Status synced to code on 2026-10-01 — ALL TASKS COMPLETE ✅.** `[x]` = implemented, built
 > clean, and verified. Test suite: **32 tests pass** (30 shared domain + 2 API integration).
-> All infrastructure is deployed to AWS (`af-south-1`, account `985923204885`) and verified live.
+> All infrastructure is deployed to AWS (`af-south-1`, account `############`) and verified live.
 >
 > **Live app:** **https://d3vn6ch6zctfj4.cloudfront.net** (HTTP 200)
 >
@@ -223,7 +223,7 @@ the deploy target. Everything is defined as code in `infra/template.yaml` (SAM).
   - Define User Pool (strong password policy, optional TOTP MFA, advanced security) and a
     public SPA app client (PKCE, no secret in browser).
   - Emit `UserPoolId` / `ClientId` as stack outputs for the SPA config.
-  - _`UserPool` + `UserPoolClient` in `infra/template.yaml`; deployed (`af-south-1_EsVd6dQTv`).
+  - _`UserPool` + `UserPoolClient` in `infra/template.yaml`; deployed (`af-south-1_<redacted>`).
     Client uses SRP (not PKCE) with no browser secret._
 
 - [x] 17. Data — DynamoDB single table (M4)
@@ -290,6 +290,6 @@ the deploy target. Everything is defined as code in `infra/template.yaml` (SAM).
   - Record the live `CloudFrontUrl` (ship gate) and documented coding-agent → AWS connection
     proof (prefer GitHub OIDC role, no static keys).
   - _Done: core stack + hosting stack deployed to `af-south-1`; SPA build synced to
-    `maribooks-prod-spa-985923204885` and CloudFront invalidated. Live app:
+    `maribooks-prod-spa-############` and CloudFront invalidated. Live app:
     **https://d3vn6ch6zctfj4.cloudfront.net** (HTTP 200). AWS connection proof captured in
     `submission/aws-connection-proof.md`. Outputs recorded in `infra/DEPLOYED.md`._
